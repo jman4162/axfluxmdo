@@ -52,3 +52,38 @@ class TestFieldPlots:
         fig = plot_efficiency_map(emap)
         assert fig is not None
         plt.close(fig)
+
+
+class TestOptimizationPlots:
+    def test_tornado_returns_figure(self, reference_motor, reference_op):
+        from axfluxmdo.optimize import compute_sensitivities
+        from axfluxmdo.viz import plot_tornado
+
+        sens = compute_sensitivities(
+            reference_motor, reference_op, ["air_gap", "outer_radius"], output="torque_nm"
+        )
+        fig = plot_tornado(sens)
+        assert fig is not None
+        plt.close(fig)
+
+    def test_plot_pareto_with_colorbar(self, reference_motor, reference_op):
+        pytest.importorskip("pymoo")
+        from axfluxmdo.optimize import optimize_pareto
+        from axfluxmdo.viz import plot_pareto
+
+        study = optimize_pareto(
+            reference_motor,
+            reference_op,
+            variables={"outer_radius": (0.06, 0.10), "fill_factor": (0.35, 0.55)},
+            objectives=["maximize_torque_density", "maximize_efficiency"],
+            pop_size=8,
+            n_gen=3,
+            seed=3,
+        )
+        fig = plot_pareto(study, x="torque_density", y="efficiency", color="winding_temp_c")
+        assert len(fig.axes) == 2  # scatter + colorbar
+        plt.close(fig)
+
+        fig2 = plot_pareto(study, x="outer_radius", y="torque_nm", annotate_best=True)
+        assert fig2 is not None
+        plt.close(fig2)
