@@ -31,7 +31,6 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
 
 from axfluxmdo import AxialFluxMotor
 from axfluxmdo.solvers import GapFieldSolution, find_getdp
@@ -76,11 +75,19 @@ for p in (msh_slotless, msh_slotted, msh_3d):
 
 # %%
 import gmsh  # noqa: E402
+import numpy as np  # noqa: E402
+from matplotlib.collections import PolyCollection  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
 
 gmsh.initialize()
 gmsh.open(str(msh_slotted))
-_, coords, _ = gmsh.model.mesh.getNodes()
-xyz = coords.reshape(-1, 3)
+node_tags, coords, _ = gmsh.model.mesh.getNodes()
+node_tags = np.asarray(node_tags, dtype=int)
+xyz = np.asarray(coords).reshape(-1, 3)
+# getNodes() does not return nodes in tag order; build an explicit tag->row map
+tag_to_row = np.empty(node_tags.max() + 1, dtype=int)
+tag_to_row[node_tags] = np.arange(len(node_tags))
+
 tri_groups = []
 for dim, tag in gmsh.model.getPhysicalGroups(2):
     name = gmsh.model.getPhysicalName(dim, tag)
@@ -89,28 +96,48 @@ for dim, tag in gmsh.model.getPhysicalGroups(2):
         etypes, _, enodes = gmsh.model.mesh.getElements(dim, ent)
         for etype, nodes in zip(etypes, enodes, strict=True):
             if etype == 2:  # 3-node triangles
-                tris += list((nodes.reshape(-1, 3) - 1).astype(int))
+                conn = np.asarray(nodes, dtype=int).reshape(-1, 3)
+                tris.append(tag_to_row[conn])
     if tris:
-        tri_groups.append((name, tris))
+        tri_groups.append((name, np.vstack(tris)))
 gmsh.finalize()
 
-fig, ax = plt.subplots(figsize=(11, 4))
 colors = {
-    "ROTOR_IRON": "0.5",
+    "ROTOR_IRON": "#808080",
     "MAGNET_N": "#d62728",
     "MAGNET_S": "#1f77b4",
-    "AIR": "#f0f0ff",
-    "AIRGAP": "#ffffff",
+    "AIR": "#eef2f7",
+    "AIRGAP": "#f7f7f7",
     "WINDING": "#b87333",
-    "STATOR_IRON": "0.5",
+    "STATOR_IRON": "#808080",
 }
+legend_labels = {
+    "ROTOR_IRON": "iron (rotor/stator)",
+    "MAGNET_N": "magnet N",
+    "MAGNET_S": "magnet S",
+    "WINDING": "copper (slots)",
+    "AIRGAP": "air gap",
+}
+
+x_mm, y_mm = xyz[:, 0] * 1e3, xyz[:, 1] * 1e3
+fig, ax = plt.subplots(figsize=(8.5, 8))
 for name, tris in tri_groups:
-    t = mtri.Triangulation(xyz[:, 0] * 1e3, xyz[:, 1] * 1e3, tris)
-    ax.tripcolor(t, facecolors=[1.0] * len(tris), cmap="Greys", alpha=0.0)
-    ax.triplot(t, lw=0.25, color=colors.get(name, "k"), alpha=0.9)
+    verts = np.dstack([x_mm[tris], y_mm[tris]])  # (n_tris, 3, 2)
+    ax.add_collection(
+        PolyCollection(
+            verts,
+            facecolor=colors.get(name, "white"),
+            edgecolor=(0, 0, 0, 0.2),
+            linewidth=0.1,
+        )
+    )
+ax.set_xlim(x_mm.min() - 0.5, x_mm.max() + 0.5)
+ax.set_ylim(y_mm.min() - 0.5, y_mm.max() + 0.5)
+handles = [Patch(facecolor=colors[k], edgecolor="k", label=v) for k, v in legend_labels.items()]
+ax.legend(handles=handles, fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.08), ncol=3)
 ax.set_xlabel("x (mm)")
 ax.set_ylabel("y (mm)")
-ax.set_title("Unrolled 2D mesh (slotted) — one pole pair")
+ax.set_title("Unrolled 2D mesh (slotted), one pole pair: rotor below, stator above")
 ax.set_aspect("equal")
 fig.tight_layout()
 fig.savefig(OUTPUT_DIR / "06_mesh_2d.png", dpi=150, bbox_inches="tight")
