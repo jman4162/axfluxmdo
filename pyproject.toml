@@ -49,6 +49,11 @@ viz3d = [
     "pyvista>=0.44",
     "imageio>=2.28",
 ]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.27",
+    "mkdocs-jupyter>=0.25",
+]
 dev = [
     "pytest>=8",
     "pytest-cov",
@@ -76,6 +81,8 @@ exclude = [
     "examples/output",
     ".github",
     ".claude",
+    "site",
+    "docs/examples",
 ]
 
 [tool.ruff]

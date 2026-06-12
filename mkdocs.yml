@@ -1,0 +1,105 @@
+site_name: axfluxmdo
+site_description: >-
+  Parametric modeling, simulation, and multidisciplinary design optimization
+  of axial-flux permanent-magnet motors.
+site_url: https://jman4162.github.io/axfluxmdo/
+repo_url: https://github.com/jman4162/axfluxmdo
+repo_name: jman4162/axfluxmdo
+edit_uri: ""
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: null
+            show_source: true
+            members_order: source
+            show_root_heading: true
+            show_signature_annotations: true
+            separate_signature: true
+            merge_init_into_class: true
+  - mkdocs-jupyter:
+      include: ["examples/*.ipynb"]
+      execute: false
+      include_source: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide:
+      - Analytical model: guide/analytical-model.md
+      - 2.5D annular model: guide/annular-model.md
+      - Pareto optimization & MDO: guide/optimization.md
+      - FEA validation: guide/fea-validation.md
+      - Surrogates & Bayesian optimization: guide/surrogates-bo.md
+      - 3D visualization: guide/viz-3d.md
+  - Limitations: limitations.md
+  - Examples:
+      - Basic motor evaluation: examples/01_basic_axial_flux_motor.ipynb
+      - Pole-pair tradeoff: examples/02_pole_pair_tradeoff.ipynb
+      - Annular model & efficiency map: examples/03_annular_efficiency_map.ipynb
+      - Air-gap sensitivity: examples/04_air_gap_sensitivity.ipynb
+      - Torque-density optimization: examples/05_torque_density_optimization.ipynb
+      - Gmsh export & GetDP validation: examples/06_gmsh_export.ipynb
+      - Bayesian optimization: examples/07_bayesian_optimization.ipynb
+      - 3D animation: examples/08_3d_animation.ipynb
+  - API Reference:
+      - api/index.md
+      - Core: api/core.md
+      - geometry: api/geometry.md
+      - materials: api/materials.md
+      - models: api/models.md
+      - optimize: api/optimize.md
+      - solvers: api/solvers.md
+      - validation: api/validation.md
+      - viz: api/viz.md
+  - Changelog: changelog.md

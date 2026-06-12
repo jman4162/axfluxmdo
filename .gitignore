@@ -20,6 +20,10 @@ htmlcov/
 # Example outputs
 examples/output/
 
+# Docs build artifacts (docs/examples is a build-time copy of examples/*.ipynb)
+site/
+docs/examples/
+
 # OS
 .DS_Store
 .venv.nosync/
