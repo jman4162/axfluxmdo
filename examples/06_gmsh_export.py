@@ -187,3 +187,16 @@ if sol_slotted is not None:
     print(f"                load line(k_C): {ratio_loadline:.4f}")
     cmp_slotted = compare_open_circuit(motor, sol_slotted, magnet_temp_c=MAGNET_TEMP_C)
     print(cmp_slotted)
+
+    # Feed the measurement back into the analytical layer: both models accept
+    # carter_factor, correcting torque/field predictions for slotting.
+    from axfluxmdo import OperatingPoint
+    from axfluxmdo.models import AnalyticalModel
+
+    op = OperatingPoint(speed_rpm=500, current_rms=25, dc_bus_voltage=48)
+    corrected = AnalyticalModel(carter_factor=k_c).evaluate(motor, op)
+    uncorrected = AnalyticalModel().evaluate(motor, op)
+    print(
+        f"torque, slotless load line: {uncorrected.torque_nm:.2f} N·m; "
+        f"with measured k_C: {corrected.torque_nm:.2f} N·m"
+    )

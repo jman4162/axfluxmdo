@@ -85,7 +85,8 @@ class AnnularResult(AnalyticalResult):
     def __str__(self) -> str:
         extra = [
             f"  torque ripple:     {self.torque_ripple_proxy:.4f} (1/rev proxy)",
-            f"  axial force:       {self.axial_force_n:.1f} N",
+            f"  axial force:       {self.axial_force_n:.1f} N "
+            "(one-sided pull, single-gap topology — bearings must carry it)",
             f"  slices:            {self.n_slices}",
         ]
         return super().__str__() + "\n" + "\n".join(extra)
@@ -105,6 +106,9 @@ class AnnularModel:
         it and preserves exact Phase-1 parity.
     k_bearing, k_windage : mechanical loss coefficients (see
         :func:`~axfluxmdo.models.losses.mechanical_loss`), default zero.
+    carter_factor : multiplies the magnetic gap in the load line (default 1.0
+        = slotless). Phase-4 FEA measured k_C = 1.44 for the slotted reference
+        motor; see :func:`axfluxmdo.validation.measured_carter_factor`.
     """
 
     def __init__(
@@ -114,6 +118,7 @@ class AnnularModel:
         edge_fringe_length_m: float = 0.0,
         k_bearing: float = 0.0,
         k_windage: float = 0.0,
+        carter_factor: float = 1.0,
     ):
         if n_slices < 1:
             raise ValueError("n_slices must be at least 1")
@@ -122,6 +127,7 @@ class AnnularModel:
         self.edge_fringe_length_m = edge_fringe_length_m
         self.k_bearing = k_bearing
         self.k_windage = k_windage
+        self.carter_factor = carter_factor
 
     def evaluate(self, motor: AxialFluxMotor, op: OperatingPoint) -> AnnularResult:
         m, p, n_turns = motor.phases, motor.pole_pairs, motor.turns_per_phase
@@ -144,7 +150,12 @@ class AnnularModel:
         b_gap = np.array(
             [
                 airgap_flux_density_runout_mean(
-                    motor.magnet, motor.magnet_thickness, g, tol.runout_m, magnet_temp_c
+                    motor.magnet,
+                    motor.magnet_thickness,
+                    g,
+                    tol.runout_m,
+                    magnet_temp_c,
+                    self.carter_factor,
                 )
                 for g in gaps
             ]
@@ -205,7 +216,12 @@ class AnnularModel:
         b_sq = np.array(
             [
                 airgap_b_squared_runout_mean(
-                    motor.magnet, motor.magnet_thickness, g, tol.runout_m, magnet_temp_c
+                    motor.magnet,
+                    motor.magnet_thickness,
+                    g,
+                    tol.runout_m,
+                    magnet_temp_c,
+                    self.carter_factor,
                 )
                 for g in gaps
             ]
@@ -287,7 +303,12 @@ class AnnularModel:
         lam = {"tight": 0.0, "wide": 0.0}
         for g, a, fr, area in zip(gaps, alpha, fringe, areas, strict=True):
             b_tight, b_wide = airgap_flux_density_runout_extremes(
-                motor.magnet, motor.magnet_thickness, g, runout, magnet_temp_c
+                motor.magnet,
+                motor.magnet_thickness,
+                g,
+                runout,
+                magnet_temp_c,
+                self.carter_factor,
             )
             weight = (4.0 / math.pi) * math.sin(a * math.pi / 2.0) * fr * area
             lam["tight"] += b_tight * weight

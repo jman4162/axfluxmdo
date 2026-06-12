@@ -158,3 +158,34 @@ class TestConstraintViolations:
         by_name = {c.name: c for c in r.constraints}
         assert not by_name["electrical_frequency_hz"].satisfied
         assert not by_name["line_voltage_v"].satisfied
+
+
+class TestCarterFactor:
+    def test_default_unity_preserves_goldens(self, reference_motor, reference_op):
+        base = AnalyticalModel().evaluate(reference_motor, reference_op)
+        explicit = AnalyticalModel(carter_factor=1.0).evaluate(reference_motor, reference_op)
+        assert explicit.torque_nm == base.torque_nm
+
+    def test_carter_factor_reduces_field_and_torque(self, reference_motor, reference_op):
+        base = AnalyticalModel().evaluate(reference_motor, reference_op)
+        corrected = AnalyticalModel(carter_factor=1.44).evaluate(reference_motor, reference_op)
+        assert corrected.airgap_flux_density_t < base.airgap_flux_density_t
+        assert corrected.torque_nm < base.torque_nm
+
+    def test_annular_threads_carter_factor(self, reference_motor, reference_op):
+        from axfluxmdo.models import AnnularModel
+
+        base = AnnularModel(n_slices=8).evaluate(reference_motor, reference_op)
+        corrected = AnnularModel(n_slices=8, carter_factor=1.44).evaluate(
+            reference_motor, reference_op
+        )
+        assert corrected.torque_nm < base.torque_nm
+        assert corrected.axial_force_n < base.axial_force_n
+
+    def test_models_agree_with_carter_factor(self, reference_motor, reference_op):
+        """n_slices=1 parity must hold for any carter factor."""
+        from axfluxmdo.models import AnnularModel
+
+        a = AnalyticalModel(carter_factor=1.3).evaluate(reference_motor, reference_op)
+        b = AnnularModel(n_slices=1, carter_factor=1.3).evaluate(reference_motor, reference_op)
+        assert b.torque_nm == pytest.approx(a.torque_nm, rel=1e-12)

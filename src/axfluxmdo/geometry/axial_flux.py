@@ -41,6 +41,10 @@ class AxialFluxMotor:
     magnet_shape: str = "wedge"  # "wedge": alpha(r)=alpha_m; "rectangular": constant width
     slot_depth: float = 0.012  # m, axial depth of the stator winding window
     slot_width_fraction: float = 0.5  # circumferential fraction of annulus open to copper
+    # Fundamental winding factor (distribution x pitch) for the assumed
+    # integral-slot 3-phase layout the 2D/3D geometry uses (2*phases slots per
+    # pole pair, full-pitch). Changing phases/pole/slot combinations does NOT
+    # update this automatically — supply the winding factor for your layout.
     winding_factor: float = 0.933
     end_turn_factor: float = 1.4  # end-turn length as multiple of pole pitch at mean radius
     stator_core_thickness: float = 0.008  # m, stator yoke behind the winding window

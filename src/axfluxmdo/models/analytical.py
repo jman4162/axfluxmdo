@@ -24,8 +24,10 @@ The result reports ``shear_stress_pa`` as the average shear implied by the
 computed torque, T / ((2 pi / 3)(r_o^3 - r_i^3)).
 
 Phase-1 simplifications (documented, lifted in later phases): slotless field
-(Carter factor 1), single air gap, magnets evaluated at ambient + 40 C,
-inductive voltage drop neglected, zero mechanical loss by default.
+(Carter factor 1 unless supplied), single air gap, magnets evaluated at
+ambient + 40 C (NOT coupled to the solved winding temperature — estimate the
+magnet thermal path separately for temperature-sensitive designs), inductive
+voltage drop neglected, zero mechanical loss by default.
 """
 
 from __future__ import annotations
@@ -69,7 +71,11 @@ def build_constraints(
 
     ``None`` limits resolve from the motor/operating point (see ``Limits``).
     Voltage: V_required = sqrt(3)*(E + I*R) vs V_dc/sqrt(2) (SVPWM line-line
-    fundamental; inductive drop neglected, documented Phase-1 simplification).
+    fundamental). The INDUCTIVE drop I*X_L is neglected — fine at low
+    electrical frequency, but materially optimistic when f_e is high AND the
+    voltage margin is tight (e.g. ~100 uH at several kRPM adds tens of
+    volts). Measure or estimate winding inductance before trusting a
+    near-binding voltage constraint at high speed.
     """
     v_limit = (
         limits.max_line_voltage_v
@@ -178,10 +184,21 @@ class AnalyticalResult:
 
 
 class AnalyticalModel:
-    """Layer-1 analytical sizing model."""
+    """Layer-1 analytical sizing model.
 
-    def __init__(self, limits: Limits | None = None):
+    carter_factor multiplies the magnetic air gap in the load line (default
+    1.0 = slotless). The Phase-4 FEA validation found the uncorrected load
+    line OVERESTIMATES the gap field (about -11% on the under-magnet mean and
+    -7% on the fundamental for the reference motor, from inter-magnet leakage
+    and fringing), and measured an effective k_C = 1.44 for the slotted
+    variant — measure your own with
+    :func:`axfluxmdo.validation.measured_carter_factor` and pass it here for
+    corrected predictions.
+    """
+
+    def __init__(self, limits: Limits | None = None, carter_factor: float = 1.0):
         self.limits = limits or Limits()
+        self.carter_factor = carter_factor
 
     def evaluate(self, motor: AxialFluxMotor, op: OperatingPoint) -> AnalyticalResult:
         # 1. Frequencies
@@ -191,7 +208,11 @@ class AnalyticalModel:
 
         # 2. Air-gap field and fundamental flux linkage
         b_gap = airgap_flux_density(
-            motor.magnet, motor.magnet_thickness, motor.air_gap, magnet_temp_c
+            motor.magnet,
+            motor.magnet_thickness,
+            motor.air_gap,
+            magnet_temp_c,
+            self.carter_factor,
         )
         b1 = (4.0 / math.pi) * b_gap * math.sin(motor.magnet_arc_ratio * math.pi / 2.0)
         flux_per_pole = b1 * motor.airgap_area / (math.pi * motor.pole_pairs)
