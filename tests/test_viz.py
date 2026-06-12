@@ -113,3 +113,44 @@ class TestGapFieldPlot:
         fig = plot_gap_field(sol, cmp_)
         assert fig is not None
         plt.close(fig)
+
+
+class TestBayesoptPlots:
+    @pytest.fixture(scope="class")
+    def bo_study(self):
+        pytest.importorskip("sklearn")
+        from axfluxmdo import AxialFluxMotor, OperatingPoint
+        from axfluxmdo.optimize import bayesian_optimize
+
+        motor = AxialFluxMotor(outer_radius=0.08, inner_radius=0.025, air_gap=0.0008, pole_pairs=14)
+        op = OperatingPoint(speed_rpm=500, current_rms=25, dc_bus_voltage=48)
+        return bayesian_optimize(
+            motor,
+            op,
+            variables={"outer_radius": (0.06, 0.10), "pole_pairs": [10, 12, 14]},
+            objective="maximize_torque_density",
+            n_initial=5,
+            n_iterations=4,
+            seed=9,
+        )
+
+    def test_convergence_plot(self, bo_study):
+        from axfluxmdo.viz import plot_convergence
+
+        fig = plot_convergence(bo_study)
+        assert fig is not None
+        plt.close(fig)
+
+    def test_surrogate_slice_continuous_and_choice(self, bo_study):
+        from axfluxmdo.viz import plot_surrogate_slice
+
+        for var in ("outer_radius", "pole_pairs"):
+            fig = plot_surrogate_slice(bo_study, var)
+            assert fig is not None
+            plt.close(fig)
+
+    def test_unknown_variable_raises(self, bo_study):
+        from axfluxmdo.viz import plot_surrogate_slice
+
+        with pytest.raises(ValueError, match="unknown design variable"):
+            plot_surrogate_slice(bo_study, "bogus")

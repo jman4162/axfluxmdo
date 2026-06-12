@@ -74,11 +74,14 @@ class BOStudy:
 
     def summary(self) -> str:
         n_feas = int(self.feasible.sum())
+        shown = {
+            k: round(float(v), 6) if isinstance(v, float) else v for k, v in self.best_x.items()
+        }
         lines = [
             f"BOStudy: {len(self.X)} evaluations ({self.n_initial} initial + "
             f"{self.n_iterations} BO), {n_feas} feasible, seed={self.seed}",
             f"  {self.objective.label}: best = {self.best_value:.6g}",
-            f"  best design: { {k: round(float(v), 6) if isinstance(v, float) else v for k, v in self.best_x.items()} }",
+            f"  best design: {shown}",
         ]
         recs = self.recommend(k=1)
         if recs:
