@@ -21,6 +21,7 @@ Release/PyPI invariants (v0.7.0):
 - sdist deliberately includes examples/docs (~8.5 MB, portfolio value); it excludes `.venv*` and `.github` — iCloud can drop `".venv 2"`-style duplicate dirs into the tree, which the gitignore (`.venv*/`) and sdist excludes both guard against.
 - `carter_factor` defaults to 1.0 on both models — all golden values unchanged; the knob exists so measured FEA corrections can be fed back.
 - CHANGELOG.md is keep-a-changelog; add an entry per release.
+- At each release, sync the version in THREE places: pyproject.toml, the README Citation BibTeX block, and CITATION.cff (plus its date-released).
 
 Future-work decisions (2026-06-12, don't re-litigate without new information):
 - Elmer integration: assessed and declined as the next step — it would duplicate the GetDP magnetostatics validation with a second runner/format/parser for zero new science, and its distribution is heavier (no simple macOS standalone). Revisit ONLY when the package wants coupled multiphysics FEA: thermal conduction replacing the lumped RC, or rotor-disk structural deflection under the ~5.6 kN single-gap axial pull (that analysis would be genuinely new capability and is the natural Elmer demo).

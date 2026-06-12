@@ -95,6 +95,32 @@ AnalyticalResult
 
 ![Motor geometry](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/geometry.png)
 
+## Use in industrial robotics
+
+Axial-flux machines suit robot joints for two structural reasons: the pancake aspect
+ratio packages well inside joint envelopes, and high pole counts work naturally at the
+low speeds and high torques of direct-drive or low-ratio actuators. Several parts of
+the package map directly onto actuator development work:
+
+- Sizing at the duty point. Every evaluation reports thermal, voltage, current-density,
+  and saturation margins, so a candidate joint motor can be screened against its
+  continuous and peak torque requirements before any FEA.
+- Manufacturing sensitivity. Air-gap error, rotor coning, and runout are first-class
+  design variables. Their effects on torque ripple and axial bearing load are computed
+  per design; both matter for joint control bandwidth and encoder integrity.
+- Duty-cycle energy. Constraint-aware efficiency maps over the joint's speed–torque
+  envelope support trajectory-level energy estimates.
+- Actuator tradeoff studies. Pareto fronts over torque density, efficiency, and mass
+  under joint constraints; Bayesian optimization when the objective involves an FEA
+  solve or test-stand data.
+- System co-design. The OpenMDAO component lets the motor model participate in
+  arm-level optimization together with gearbox, inverter, and structural models.
+
+The standard caveats in [Model fidelity & known limitations](#model-fidelity--known-limitations)
+apply with extra force for actuators: the model is single-gap, ripple is a proxy rather
+than a waveform, and designs should be validated against FEA and hardware before
+commitment.
+
 ## Pole-pair tradeoff
 
 ```python
@@ -275,32 +301,6 @@ volume properties to better than 0.1% (tested).
 ![Spinning rotor](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/08_rotation.gif)
 ![Exploded assembly](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/08_exploded.gif)
 
-## Use in industrial robotics
-
-Axial-flux machines suit robot joints for two structural reasons: the pancake aspect
-ratio packages well inside joint envelopes, and high pole counts work naturally at the
-low speeds and high torques of direct-drive or low-ratio actuators. Several parts of
-the package map directly onto actuator development work:
-
-- Sizing at the duty point. Every evaluation reports thermal, voltage, current-density,
-  and saturation margins, so a candidate joint motor can be screened against its
-  continuous and peak torque requirements before any FEA.
-- Manufacturing sensitivity. Air-gap error, rotor coning, and runout are first-class
-  design variables. Their effects on torque ripple and axial bearing load are computed
-  per design; both matter for joint control bandwidth and encoder integrity.
-- Duty-cycle energy. Constraint-aware efficiency maps over the joint's speed–torque
-  envelope support trajectory-level energy estimates.
-- Actuator tradeoff studies. Pareto fronts over torque density, efficiency, and mass
-  under joint constraints; Bayesian optimization when the objective involves an FEA
-  solve or test-stand data.
-- System co-design. The OpenMDAO component lets the motor model participate in
-  arm-level optimization together with gearbox, inverter, and structural models.
-
-The standard caveats in [Model fidelity & known limitations](#model-fidelity--known-limitations)
-apply with extra force for actuators: the model is single-gap, ripple is a proxy rather
-than a waveform, and designs should be validated against FEA and hardware before
-commitment.
-
 ## Inside the analytical model
 
 The base layer computes the magnet load-line air-gap flux density (with
@@ -366,6 +366,22 @@ absolute numbers; each item is also documented at the relevant docstring.
 - No dependencies on proprietary tools (Motor-CAD, Ansys Maxwell, COMSOL).
 - Torque density is never optimized alone; thermal headroom, ripple, controllability,
   and manufacturability are co-equal objectives.
+
+## Citation
+
+If you use axfluxmdo in academic work, please cite it:
+
+```bibtex
+@software{hodge_axfluxmdo_2026,
+  author  = {Hodge, John},
+  title   = {axfluxmdo: Parametric modeling, simulation, and multidisciplinary
+             design optimization of axial-flux permanent-magnet motors},
+  year    = {2026},
+  version = {0.7.0},
+  url     = {https://github.com/jman4162/axfluxmdo},
+  note    = {Documentation: https://jman4162.github.io/axfluxmdo/}
+}
+```
 
 ## License
 

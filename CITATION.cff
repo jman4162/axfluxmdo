@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use axfluxmdo in academic work, please cite it as below."
+type: software
+title: "axfluxmdo: Parametric modeling, simulation, and multidisciplinary design optimization of axial-flux permanent-magnet motors"
+authors:
+  - family-names: Hodge
+    given-names: John
+version: 0.7.0
+date-released: 2026-06-12
+url: "https://jman4162.github.io/axfluxmdo/"
+repository-code: "https://github.com/jman4162/axfluxmdo"
+license: MIT
+keywords:
+  - axial-flux
+  - permanent-magnet motor
+  - motor design
+  - multidisciplinary design optimization
+  - electromagnetics
+  - finite element analysis
+  - Bayesian optimization
