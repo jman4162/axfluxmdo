@@ -118,7 +118,7 @@ electrical frequency, switching burden, and ripple at high p. The
 [pole-pair explainer](https://jman4162.github.io/axfluxmdo/guide/analytical-model/#pole-pairs-and-torque-a-common-misconception)
 in the docs works through the algebra and both sweeps.
 
-## The 2.5D annular model (Phase 2)
+## The 2.5D annular model
 
 ```python
 import dataclasses
@@ -154,7 +154,7 @@ where physics is genuinely radius-dependent:
 ![Radial profiles](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/03_radial_profiles.png)
 ![Efficiency map](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/03_efficiency_map.png)
 
-## Pareto optimization (Phase 3)
+## Pareto optimization
 
 Requires the optimization extra: `pip install "axfluxmdo[opt]"` (pymoo + OpenMDAO).
 
@@ -188,7 +188,7 @@ supports gradient-based refinement and larger coupled MDO groups.
 ![Pareto front](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/05_pareto_front.png)
 ![Tornado chart](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/05_tornado.png)
 
-## FEA validation (Phase 4)
+## FEA validation
 
 ```python
 from axfluxmdo.solvers import solve_open_circuit          # needs getdp on PATH
@@ -220,7 +220,7 @@ represent. Measured on the reference motor (GetDP 3.5.0):
 A 3D annular-sector mesh export (`export_3d_sector`) is included for downstream
 tooling. Elmer integration is deferred.
 
-## Bayesian optimization for expensive evaluations (Phase 5)
+## Bayesian optimization for expensive evaluations
 
 ```python
 from axfluxmdo.optimize import bayesian_optimize
@@ -301,23 +301,19 @@ apply with extra force for actuators: the model is single-gap, ripple is a proxy
 than a waveform, and designs should be validated against FEA and hardware before
 commitment.
 
-## What's in the model (Phase 1)
+## Inside the analytical model
 
-- Magnetics: magnet load-line air-gap flux density with temperature-derated remanence
-  and fundamental-harmonic flux linkage. Torque and back-EMF derive from the same flux
-  linkage, so the power balance `m·E·I = T·ω` holds to machine precision (enforced by
-  tests).
-- Losses: copper loss with resistance–temperature coupling, two-term Steinmetz core
-  loss (M-19 coefficients pinned to datasheet values), and a mechanical-loss
-  placeholder.
-- Thermal: closed-form steady-state lumped RC winding temperature including the
-  copper-loss/temperature fixed point, with thermal-runaway detection.
-- Constraints: winding temperature, electrical frequency, current density, inverter
-  voltage, yoke saturation, and magnet temperature, each reported with a normalized
-  margin.
-- Materials: NdFeB grades (N35/N42/N48/N42SH), M-19 29ga steel, copper.
-- Sweeps and visualization: one-line parameter sweeps over any design field, front-view
-  and cross-section geometry plots.
+The base layer computes the magnet load-line air-gap flux density (with
+temperature-derated remanence and an optional measured `carter_factor`), then derives
+torque and back-EMF from a single flux linkage so the power balance `m·E·I = T·ω`
+holds to machine precision (test-enforced). Losses are DC copper with
+resistance–temperature coupling and two-term Steinmetz core loss with
+datasheet-pinned M-19 coefficients. The thermal model is a closed-form lumped RC with
+thermal-runaway detection. Six named constraints (winding temperature, electrical
+frequency, current density, inverter voltage, yoke saturation, magnet temperature)
+report normalized margins on every evaluation. The
+[analytical model guide](https://jman4162.github.io/axfluxmdo/guide/analytical-model/)
+derives each equation.
 
 ## Development
 

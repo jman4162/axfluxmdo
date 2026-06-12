@@ -22,6 +22,10 @@ Release/PyPI invariants (v0.7.0):
 - `carter_factor` defaults to 1.0 on both models — all golden values unchanged; the knob exists so measured FEA corrections can be fed back.
 - CHANGELOG.md is keep-a-changelog; add an entry per release.
 
+Future-work decisions (2026-06-12, don't re-litigate without new information):
+- Elmer integration: assessed and declined as the next step — it would duplicate the GetDP magnetostatics validation with a second runner/format/parser for zero new science, and its distribution is heavier (no simple macOS standalone). Revisit ONLY when the package wants coupled multiphysics FEA: thermal conduction replacing the lumped RC, or rotor-disk structural deflection under the ~5.6 kN single-gap axial pull (that analysis would be genuinely new capability and is the natural Elmer demo).
+- Higher-impact next candidates, in rough order: double-gap topology support (top documented limitation; YASA/TORUS), saturation/nonlinear BH, winding-factor calculator, winding-inductance estimate (fixes the voltage constraint's neglected I·X_L).
+
 Docs site (MkDocs Material → GitHub Pages at https://jman4162.github.io/axfluxmdo/):
 - `mkdocs.yml` at root, `docs_dir: docs` — `docs/images/` doubles as README assets (README image URLs stay ABSOLUTE for PyPI; site pages use relative `images/...`).
 - `docs/examples/*.ipynb` are BUILD-TIME COPIES of `examples/*.ipynb` (gitignored, never edit) — regenerate notebooks via the jupytext flow and the site picks them up. Local build: `mkdir -p docs/examples && cp examples/*.ipynb docs/examples/ && mkdocs build --strict`.
