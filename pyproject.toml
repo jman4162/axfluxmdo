@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "axfluxmdo"
+version = "0.1.0"
+description = "Parametric modeling, analysis, and multidisciplinary design optimization of axial-flux permanent-magnet motors"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "John Hodge", email = "jhodge007@gmail.com" }]
+keywords = [
+    "axial-flux",
+    "permanent-magnet",
+    "motor-design",
+    "electromagnetics",
+    "MDO",
+    "optimization",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+]
+dependencies = [
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+    "ruff>=0.4",
+    "jupytext",
+    "nbconvert",
+    "ipykernel",
+]
+
+[project.urls]
+Repository = "https://github.com/jman4162/axfluxmdo"
+Issues = "https://github.com/jman4162/axfluxmdo/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/axfluxmdo"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "NPY"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
