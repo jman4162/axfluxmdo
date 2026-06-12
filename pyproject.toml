@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "axfluxmdo"
-version = "0.2.0"
+version = "0.3.0"
 description = "Parametric modeling, analysis, and multidisciplinary design optimization of axial-flux permanent-magnet motors"
 readme = "README.md"
 license = "MIT"
@@ -63,8 +63,8 @@ target-version = "py310"
 select = ["E", "F", "I", "UP", "B", "NPY"]
 
 [tool.ruff.lint.per-file-ignores]
-# Trailing bare expressions are notebook display cells in the paired examples
-"examples/*" = ["B018"]
+# Bare expressions are notebook display cells; mid-file imports are notebook narrative
+"examples/*" = ["B018", "E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -13,11 +13,13 @@ geometry, fast analytical physics models, constraint visualization, and (in late
 solver automation and Pareto-front optimization, so that design tradeoffs can be explored
 systematically instead of by intuition-only iteration.
 
-**Phases 1–2 (current):** the analytical workbench (parametric motor object,
+**Phases 1–3 (current):** the analytical workbench (parametric motor object,
 energy-consistent torque/back-EMF/loss/thermal model, constraints, sweeps, geometry
-visualization) plus the 2.5D annular slice model (radius-resolved fields and losses,
-manufacturing imperfections, torque-ripple and axial-force metrics, efficiency maps).
-Evaluating a design takes microseconds, so wide design-space exploration is cheap.
+visualization), the 2.5D annular slice model (radius-resolved fields and losses,
+manufacturing imperfections, torque-ripple and axial-force metrics, efficiency maps),
+and the MDO layer (pymoo Pareto optimization over mixed continuous/discrete variables,
+OpenMDAO integration, sensitivity tornado charts). Evaluating a design takes
+microseconds, so a full Pareto study runs in seconds.
 
 ## Install
 
@@ -129,6 +131,40 @@ only where physics is genuinely radius-dependent:
 ![Radial profiles](docs/images/03_radial_profiles.png)
 ![Efficiency map](docs/images/03_efficiency_map.png)
 
+## Pareto optimization (Phase 3)
+
+Requires the optimization extra: `pip install -e ".[dev,opt]"` (pymoo + OpenMDAO).
+
+```python
+from axfluxmdo.optimize import optimize_pareto
+from axfluxmdo.viz import plot_pareto
+
+study = optimize_pareto(
+    motor,
+    op,
+    variables={
+        "outer_radius": (0.05, 0.12),
+        "pole_pairs": [8, 10, 12, 14, 16, 18, 20],
+        "air_gap": (0.0005, 0.0015),
+        "fill_factor": (0.30, 0.60),
+    },
+    objectives=["maximize_torque_density", "maximize_efficiency", "minimize_mass"],
+    constraints=["winding_temp_c < 140", "electrical_frequency_hz < 1000"],
+)
+
+plot_pareto(study, x="torque_density", y="efficiency", color="winding_temp_c", show=True)
+```
+
+Mixed continuous/discrete variables run through pymoo's `MixedVariableGA`; the model's
+built-in limits (thermal, voltage, current density, saturation, magnet temperature) are
+enforced in addition to the user constraint strings, so **every returned design is
+feasible**. One-at-a-time sensitivities (`compute_sensitivities` + `plot_tornado`) show
+which variables actually move a chosen design, and an OpenMDAO `ExplicitComponent`
+wrapper supports gradient-based refinement and larger coupled MDO groups.
+
+![Pareto front](docs/images/05_pareto_front.png)
+![Tornado chart](docs/images/05_tornado.png)
+
 ## What's in the model (Phase 1)
 
 - **Magnetics:** magnet load-line air-gap flux density with temperature-derated
@@ -159,7 +195,7 @@ ruff check . && ruff format --check .
 | ----- | ----- | ------ |
 | 1 | Analytical workbench: parametric motor, torque/EMF/losses/thermal RC, constraints, pole-pair sweep, geometry viz | ✅ |
 | 2 | 2.5D annular slice model: radius-dependent flux/loading/losses, air-gap & runout sensitivity, efficiency maps | ✅ |
-| 3 | MDO: OpenMDAO components, pymoo Pareto optimization, sensitivity analysis | — |
+| 3 | MDO: OpenMDAO components, pymoo Pareto optimization, sensitivity analysis | ✅ |
 | 4 | External solver integration: Gmsh export, GetDP/Elmer pipelines, sim-to-analytical residuals | — |
 | 5 | Surrogates & Bayesian optimization for expensive design loops | — |
 

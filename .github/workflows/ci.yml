@@ -31,3 +31,4 @@ jobs:
         run: |
           python examples/01_basic_axial_flux_motor.py
           python examples/02_pole_pair_tradeoff.py
+          python examples/05_torque_density_optimization.py

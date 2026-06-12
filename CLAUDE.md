@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phases 1–2 are implemented: the analytical workbench (`AnalyticalModel`) and the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`). Phases 3–5 (MDO, external solvers, surrogates) are not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+Phases 1–3 are implemented: the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), and the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`). Phases 4–5 (external solvers, surrogates/BO) are not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+
+Optimization-layer invariants:
+- pymoo and OpenMDAO live in the `[opt]` extra and are NEVER imported at `axfluxmdo.optimize` import time (pymoo lazily inside `optimize_pareto`; OpenMDAO names via PEP 562 `__getattr__`). A test/check: `import axfluxmdo.optimize` must not put `pymoo` or `openmdao` in `sys.modules`.
+- The alias map (`ALIASES`/`resolve_key` in `optimize/problem.py`) is the single source for short-name resolution — viz and sensitivity import it; never re-declare aliases.
+- Every `ParetoStudy` point is feasible (user constraints AND `result.feasible`); `enforce_model_constraints=False` is the only sanctioned escape.
+- `ParetoStudy.F` stores human-readable (un-negated) objective values; the minimize-space sign handling lives only in `EvalRecord.f_min`.
+- Invalid design vectors (geometry `ValueError`) are penalized with large finite values in `DesignProblem.evaluate`, never raised to the optimizer.
 
 Physics invariants enforced by tests (do not break):
 - Torque and back-EMF derive from the same flux linkage so `m·E_rms·I_rms == T·ω_m` holds to ~1e-9 relative, and the energy balance `P_in == P_out + P_cu + P_core + P_mech` likewise — in BOTH models, for any imperfections.
@@ -55,7 +62,7 @@ Build Phase 1 (analytical workbench) then Phase 2 (2.5D annular model) as the po
 ## Commands
 
 ```bash
-pip install -e ".[dev]"                  # editable install (venv at .venv/)
+pip install -e ".[dev,opt]"              # editable install (venv at .venv/); opt = pymoo + OpenMDAO
 pytest                                   # full suite
 pytest tests/test_analytical.py          # one file
 pytest tests/test_analytical.py::TestExactIdentities::test_energy_balance   # one test
