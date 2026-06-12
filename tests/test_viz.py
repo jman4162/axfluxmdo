@@ -87,3 +87,29 @@ class TestOptimizationPlots:
         fig2 = plot_pareto(study, x="outer_radius", y="torque_nm", annotate_best=True)
         assert fig2 is not None
         plt.close(fig2)
+
+
+class TestGapFieldPlot:
+    def test_returns_figure_with_overlays(self, reference_motor):
+        import math
+
+        import numpy as np
+
+        from axfluxmdo.solvers import GapFieldSolution
+        from axfluxmdo.validation import compare_open_circuit
+        from axfluxmdo.viz import plot_gap_field
+
+        tau = reference_motor.pole_pitch
+        x = np.linspace(0, 2 * tau, 401)
+        sol = GapFieldSolution(
+            x_m=x,
+            by_t=1.0 * np.sin(math.pi * x / tau),
+            pole_pitch_m=tau,
+            magnet_arc_ratio=reference_motor.magnet_arc_ratio,
+            magnet_temp_c=65.0,
+            slotted=False,
+        )
+        cmp_ = compare_open_circuit(reference_motor, sol, magnet_temp_c=65.0)
+        fig = plot_gap_field(sol, cmp_)
+        assert fig is not None
+        plt.close(fig)
