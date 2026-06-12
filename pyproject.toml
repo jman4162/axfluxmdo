@@ -58,5 +58,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "NPY"]
 
+[tool.ruff.lint.per-file-ignores]
+# Trailing bare expressions are notebook display cells in the paired examples
+"examples/*" = ["B018"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

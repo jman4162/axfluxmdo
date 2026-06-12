@@ -4,7 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Greenfield. The repository currently contains only `SPEC.md` — the design document for `axfluxmdo`, an open-source Python toolkit for parametric modeling, simulation, visualization, and multidisciplinary design optimization (MDO) of axial-flux permanent-magnet motors. There is no code, package scaffolding, or test infrastructure yet. Read `SPEC.md` in full before doing any implementation work; it is the source of truth for scope, architecture, equations, and roadmap.
+Phase 1 (analytical workbench) is implemented: parametric `AxialFluxMotor`, `AnalyticalModel` with energy-consistent torque/EMF/loss/thermal physics, constraint records, parameter sweeps, and geometry visualization, with a full test suite. Phases 2–5 (annular 2.5D model, MDO, external solvers, surrogates) are not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+
+Physics invariants enforced by tests (do not break): torque and back-EMF derive from the same flux linkage so `m·E_rms·I_rms == T·ω_m` holds to ~1e-9 relative; the energy balance `P_in == P_out + P_cu + P_core + P_mech` likewise; `tests/test_regression.py` pins golden values for the SPEC reference motor — if a deliberate physics change shifts them, re-verify by hand (the hand calculation is in that file's docstring) before updating.
+
+`AnalyticalResult.to_dict()` keys and constraint names (`winding_temp_c`, `electrical_frequency_hz`, ...) are a stable interface — Phase 3's `optimize_pareto` will parse SPEC-style constraint strings against them.
+
+Examples in `examples/` are jupytext-paired: author the `.py` percent script, then regenerate the executed `.ipynb` (`jupytext --to ipynb` + `jupyter nbconvert --execute --inplace`, without MPLBACKEND=Agg so figures render inline). Keep both in sync.
 
 ## What this package is (and isn't)
 
@@ -43,4 +49,11 @@ Build Phase 1 (analytical workbench) then Phase 2 (2.5D annular model) as the po
 
 ## Commands
 
-None yet — no build/test/lint tooling exists. When scaffolding the package, set up commands and document them here (build, test, single-test invocation, lint).
+```bash
+pip install -e ".[dev]"                  # editable install (venv at .venv/)
+pytest                                   # full suite
+pytest tests/test_analytical.py          # one file
+pytest tests/test_analytical.py::TestExactIdentities::test_energy_balance   # one test
+ruff check . && ruff format --check .    # lint + format check (CI enforces both)
+MPLBACKEND=Agg python examples/01_basic_axial_flux_motor.py   # run an example headless
+```

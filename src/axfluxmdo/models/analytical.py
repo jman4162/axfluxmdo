@@ -149,8 +149,8 @@ class AnalyticalModel:
         # 3. Torque and back-EMF from the same flux linkage (see module docstring)
         torque = motor.phases * motor.pole_pairs * flux_linkage * op.current_rms / math.sqrt(2.0)
         back_emf_rms = motor.pole_pairs * omega_m * flux_linkage / math.sqrt(2.0)
-        shear_stress = (
-            torque / ((2.0 * math.pi / 3.0) * (motor.outer_radius**3 - motor.inner_radius**3))
+        shear_stress = torque / (
+            (2.0 * math.pi / 3.0) * (motor.outer_radius**3 - motor.inner_radius**3)
         )
 
         # 4. Core loss (temperature-independent here; computed before the thermal solve)

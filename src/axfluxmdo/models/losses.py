@@ -22,9 +22,7 @@ def steinmetz_core_loss(motor: AxialFluxMotor, f_hz: float, b_peak_t: float) -> 
     return motor.steel.core_loss_w_per_kg(f_hz, b_peak_t) * stator_core_mass(motor)
 
 
-def mechanical_loss(
-    omega_m_rad_s: float, k_bearing: float = 0.0, k_windage: float = 0.0
-) -> float:
+def mechanical_loss(omega_m_rad_s: float, k_bearing: float = 0.0, k_windage: float = 0.0) -> float:
     """Bearing + windage placeholder: k_b * omega + k_w * omega^3 (defaults zero).
 
     Fidelity item for Phase 2; the field exists so the efficiency rollup and

@@ -52,8 +52,17 @@ def _draw_front(motor: AxialFluxMotor, ax: plt.Axes) -> None:
         start = k * pole_angle_deg + 0.5 * (pole_angle_deg - magnet_arc_deg)
         color = N_COLOR if k % 2 == 0 else S_COLOR
         ax.add_patch(
-            Wedge((0, 0), r_o, start, start + magnet_arc_deg, width=r_o - r_i,
-                  facecolor=color, edgecolor="k", lw=0.4, alpha=0.85)
+            Wedge(
+                (0, 0),
+                r_o,
+                start,
+                start + magnet_arc_deg,
+                width=r_o - r_i,
+                facecolor=color,
+                edgecolor="k",
+                lw=0.4,
+                alpha=0.85,
+            )
         )
 
     ax.annotate(
@@ -84,16 +93,18 @@ def _draw_section(motor: AxialFluxMotor, ax: plt.Axes) -> None:
     layers = [  # bottom-up: (axial thickness, label, color)
         (motor.back_iron_thickness, "rotor back iron", "0.55"),
         (motor.magnet_thickness, "magnets", N_COLOR),
-        (gap_drawn, f"air gap ({motor.air_gap * 1e3:.2f} mm, drawn ×{AIR_GAP_EXAGGERATION:.0f})",
-         "white"),
+        (
+            gap_drawn,
+            f"air gap ({motor.air_gap * 1e3:.2f} mm, drawn ×{AIR_GAP_EXAGGERATION:.0f})",
+            "white",
+        ),
         (motor.slot_depth, "winding window", "#b87333"),
         (motor.stator_core_thickness, "stator core", "0.55"),
     ]
     z = 0.0
     for thickness, label, color in layers:
         ax.add_patch(
-            Rectangle((r_i, z), width, thickness, facecolor=color, edgecolor="k", lw=0.6,
-                      alpha=0.9)
+            Rectangle((r_i, z), width, thickness, facecolor=color, edgecolor="k", lw=0.6, alpha=0.9)
         )
         ax.annotate(
             f"{label}",

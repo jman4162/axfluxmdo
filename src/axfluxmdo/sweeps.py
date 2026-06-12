@@ -73,9 +73,7 @@ def sweep_parameter(
 ) -> SweepResult:
     """Evaluate the motor across values of one design field (e.g. ``air_gap``)."""
     model = model or AnalyticalModel()
-    results = [
-        model.evaluate(dataclasses.replace(motor, **{name: v}), op) for v in values
-    ]
+    results = [model.evaluate(dataclasses.replace(motor, **{name: v}), op) for v in values]
     return SweepResult(parameter=name, values=list(values), results=results)
 
 

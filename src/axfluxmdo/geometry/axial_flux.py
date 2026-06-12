@@ -138,6 +138,4 @@ class AxialFluxMotor:
     @property
     def copper_volume(self) -> float:
         """Total copper volume across all phases."""
-        return (
-            self.phases * self.turns_per_phase * self.mean_turn_length * self.conductor_area
-        )
+        return self.phases * self.turns_per_phase * self.mean_turn_length * self.conductor_area

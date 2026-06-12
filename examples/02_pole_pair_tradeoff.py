@@ -99,6 +99,4 @@ for p, r in zip(sweep.values, sweep.results, strict=True):
     by_name = {c.name: c for c in r.constraints}
     f_margin = by_name["electrical_frequency_hz"].margin
     b_yoke = by_name["core_flux_density_t"].value
-    print(
-        f"p={p:3d}  f_e margin {f_margin:+.1%}  B_yoke={b_yoke:.2f} T  feasible={r.feasible}"
-    )
+    print(f"p={p:3d}  f_e margin {f_margin:+.1%}  B_yoke={b_yoke:.2f} T  feasible={r.feasible}")
