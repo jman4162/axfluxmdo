@@ -4,7 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phases 1–3 are implemented: the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), and the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`). Phases 4–5 (external solvers, surrogates/BO) are not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+Phases 1–4 are implemented: the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`), and external solver hooks (Gmsh 2D-unrolled/3D-sector export, GetDP open-circuit magnetostatics pipeline, `validation/sim2real.py` residuals; Elmer deferred by user decision). Phase 5 (surrogates/BO) is not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+
+Solver-layer invariants:
+- `import axfluxmdo.solvers` never imports gmsh (test-enforced; PEP 562 pattern). Every gmsh session goes through `_gmsh_session` (try/finally finalize); paths absolute; .msh files written as MSH 2.2 (GetDP compatibility).
+- GetDP tests SKIP (never fail) without the binary; `AXFLUXMDO_GETDP` overrides PATH and fails loudly if set wrong. The advisory `getdp-pipeline` CI job runs the live solver with a pinned GetDP and uploads gap-field tables as artifacts.
+- **Measured fringing facts (GetDP 3.5.0, reference motor): the 1D load line is an UPPER bound — FEA midline under-magnet mean is ~11% below B_g, fundamental ~7% below B1** (inter-magnet leakage + gap fringing). The live tests assert these bands; do not "tighten" them back toward zero residual.
+- `GapFieldSolution.mean_b_t` is the UNDER-MAGNET mean (load-line semantics); the full-pitch mean is a separate property. B1 uses a trapezoid Fourier projection (never a naive FFT — the OnLine sample duplicates the x=0/L endpoint).
+- Golden tables in `examples/data/` carry provenance headers; regenerate only from a documented GetDP run (the CI artifact path).
+- Magnet-temperature chain: solver default = 25 °C ambient + `MAGNET_TEMP_RISE_C` = 65 °C, pinned to `OperatingPoint` defaults by test; `compare_open_circuit` requires `magnet_temp_c` explicitly.
+
+Local environment note: the dev venv lives at `~/.venvs/axfluxmdo` (NOT inside the repo — `~/Documents` is iCloud-synced, and iCloud sets the macOS hidden flag on files, which makes Python ≥3.12 silently skip editable-install `.pth` files).
 
 Optimization-layer invariants:
 - pymoo and OpenMDAO live in the `[opt]` extra and are NEVER imported at `axfluxmdo.optimize` import time (pymoo lazily inside `optimize_pareto`; OpenMDAO names via PEP 562 `__getattr__`). A test/check: `import axfluxmdo.optimize` must not put `pymoo` or `openmdao` in `sys.modules`.
@@ -62,7 +72,7 @@ Build Phase 1 (analytical workbench) then Phase 2 (2.5D annular model) as the po
 ## Commands
 
 ```bash
-pip install -e ".[dev,opt]"              # editable install (venv at .venv/); opt = pymoo + OpenMDAO
+pip install -e ".[dev,opt,fea]"          # venv at ~/.venvs/axfluxmdo (see note above); fea = gmsh
 pytest                                   # full suite
 pytest tests/test_analytical.py          # one file
 pytest tests/test_analytical.py::TestExactIdentities::test_energy_balance   # one test

@@ -138,8 +138,12 @@ def build_linear_2d_model(
         "STATOR_IRON": [],
     }
 
-    # The magnet band needs x-breakpoints at magnet edges; gap and iron bands
-    # share those breakpoints so every vertical interface is conformal.
+    # ALL bands share one global set of x-breakpoints (magnet edges + slot
+    # edges when slotted) so every horizontal interface is conformal: adjacent
+    # rectangles reuse the same line entities through the caches. A band with
+    # private breakpoints would duplicate the shared edge geometrically — a
+    # mesh crack, which the A_z formulation treats as a natural (infinite-mu)
+    # boundary and silently decouples the stator.
     x_breaks: list[float] = [0.0]
     magnet_intervals: list[tuple[float, float, str]] = []
     for k in range(2 * n_pole_pairs_modeled):
@@ -148,6 +152,15 @@ def build_linear_2d_model(
         name = "MAGNET_N" if k % 2 == 0 else "MAGNET_S"
         magnet_intervals.append((x0, x1, name))
         x_breaks += [x0, x1]
+    slot_intervals: list[tuple[float, float]] = []
+    if slotted:
+        n_slots = (slots_per_pole_pair or 2 * motor.phases) * n_pole_pairs_modeled
+        slot_pitch = span / n_slots
+        opening = motor.slot_width_fraction * slot_pitch
+        for k in range(n_slots):
+            center = (k + 0.5) * slot_pitch
+            slot_intervals.append((center - opening / 2.0, center + opening / 2.0))
+            x_breaks += [center - opening / 2.0, center + opening / 2.0]
     x_breaks.append(span)
     x_breaks = sorted(set(round(x, 12) for x in x_breaks))
 
@@ -176,21 +189,6 @@ def build_linear_2d_model(
         # Slotless: iron face directly at +g/2 — the load-line magnetic circuit.
         band(y_gap_top, y_stator_top, size_coarse, lambda _x: "STATOR_IRON")
     else:
-        n_slots = slots_per_pole_pair or 2 * motor.phases
-        n_slots *= n_pole_pairs_modeled
-        slot_pitch = span / n_slots
-        opening = motor.slot_width_fraction * slot_pitch
-        slot_intervals = []
-        for k in range(n_slots):
-            center = (k + 0.5) * slot_pitch
-            slot_intervals.append((center - opening / 2.0, center + opening / 2.0))
-        slot_breaks = sorted(
-            set(
-                x_breaks
-                + [round(x0, 12) for x0, _ in slot_intervals]
-                + [round(x1, 12) for _, x1 in slot_intervals]
-            )
-        )
 
         def classify_slot(xm: float) -> str:
             for x0, x1 in slot_intervals:
@@ -198,12 +196,8 @@ def build_linear_2d_model(
                     return "WINDING"
             return "STATOR_IRON"
 
-        for xa, xb in zip(slot_breaks[:-1], slot_breaks[1:], strict=False):
-            xm = 0.5 * (xa + xb)
-            surfaces[classify_slot(xm)].append(rect(xa, xb, y_gap_top, y_slot_top, size_fine))
-        # Yoke above the slots (conformal with the slot band via shared breakpoints)
-        for xa, xb in zip(slot_breaks[:-1], slot_breaks[1:], strict=False):
-            surfaces["STATOR_IRON"].append(rect(xa, xb, y_slot_top, y_stator_top, size_coarse))
+        band(y_gap_top, y_slot_top, size_fine, classify_slot)
+        band(y_slot_top, y_stator_top, size_coarse, lambda _x: "STATOR_IRON")
 
     geo.synchronize()
 

@@ -77,6 +77,22 @@ class TestExportMesh2D:
         assert left_ys.shape == right_ys.shape
         np.testing.assert_allclose(left_ys, right_ys, atol=1e-9)
 
+    @pytest.mark.parametrize("slotted", [False, True])
+    def test_mesh_is_conformal_no_duplicate_nodes(self, reference_motor, tmp_path, slotted):
+        """Coincident duplicate nodes mean a cracked interface — which the A_z
+        formulation silently treats as an infinite-permeability boundary and
+        decouples the regions (this bug made the slotted model behave slotless)."""
+        path, _ = export_mesh(reference_motor, tmp_path / "m.msh", slotted=slotted)
+        gmsh.initialize()
+        gmsh.open(str(path))
+        _, coords, _ = gmsh.model.mesh.getNodes()
+        gmsh.finalize()
+        xyz = np.round(np.asarray(coords).reshape(-1, 3), 12)
+        unique = np.unique(xyz, axis=0)
+        assert unique.shape[0] == xyz.shape[0], (
+            f"{xyz.shape[0] - unique.shape[0]} coincident duplicate nodes (mesh crack)"
+        )
+
     def test_deterministic_node_count(self, reference_motor, tmp_path):
         def node_count(p):
             gmsh.initialize()
