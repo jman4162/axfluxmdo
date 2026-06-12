@@ -43,3 +43,40 @@ def test_reference_motor_golden_values(reference_motor, reference_op):
 
 def test_reference_motor_feasible(reference_motor, reference_op):
     assert AnalyticalModel().evaluate(reference_motor, reference_op).feasible
+
+
+# --- Phase 2: annular model with every imperfection active -------------------
+#
+# Hand verification of slice 0 (innermost of 32, midpoint r = 25.859 mm):
+#   gap(r)  = 0.0008 + 1e-4 + 2e-4*(r - 0.0525)/0.055      = 0.80313 mm
+#   a       = t_m + mu_r*g = 0.004 + 1.05*0.00080313       = 4.84328e-3
+#   d       = mu_r*runout  = 1.05*3e-4                     = 3.15e-4
+#   Br(65C) = 1.30*(1 - 0.0012*45)                         = 1.2298 T
+#   <B>     = Br*t_m/sqrt(a^2 - d^2)                       = 1.01783 T   (matches model)
+# Axial pull ~ B^2/(2*mu0)*alpha*A_g ~ 0.4 MPa * 0.014 m^2 ~ 6 kN scale: OK.
+
+ANNULAR_GOLDEN = {
+    "torque_nm": 7.92548,
+    "torque_ripple_proxy": 0.0635438,
+    "axial_force_n": 5617.34,
+    "core_loss_w": 0.808411,
+    "efficiency": 0.952219,
+    "winding_temp_c": 49.5026,
+    "airgap_flux_density_t": 0.99325,
+}
+
+
+def test_annular_imperfect_golden_values(reference_motor, reference_op):
+    import dataclasses
+
+    from axfluxmdo import GapImperfections
+    from axfluxmdo.models import AnnularModel
+
+    motor = dataclasses.replace(
+        reference_motor,
+        tolerances=GapImperfections(gap_offset_m=1e-4, coning_m=2e-4, runout_m=3e-4),
+        magnet_shape="rectangular",
+    )
+    d = AnnularModel(n_slices=32).evaluate(motor, reference_op).to_dict()
+    for key, expected in ANNULAR_GOLDEN.items():
+        assert d[key] == pytest.approx(expected, rel=1e-5), key
