@@ -165,20 +165,25 @@ if sol_slotless is not None:
 # ## Measuring the Carter factor
 #
 # Slotting locally weakens the gap field; the classical correction multiplies
-# the effective gap by the Carter factor k_C. Here FEA *measures* it — and the
+# the effective gap by the Carter factor k_C. Here FEA *measures* it from the
+# slotless/slotted ratio (which cancels the common fringing bias) — and the
 # previously dormant `carter_factor` parameter of `airgap_flux_density` earns
-# its keep: plugging the measured k_C back in reproduces the slotted FEA mean.
+# its keep: the closure holds in ratio form,
+# B_loadline(1)/B_loadline(k_C) == B_FEA_slotless/B_FEA_slotted.
 
 # %%
 if sol_slotted is not None:
     from axfluxmdo.materials import airgap_flux_density
 
     k_c = measured_carter_factor(sol_slotless, sol_slotted, motor)
-    b_pred = airgap_flux_density(
+    ratio_loadline = airgap_flux_density(
+        motor.magnet, motor.magnet_thickness, motor.air_gap, MAGNET_TEMP_C
+    ) / airgap_flux_density(
         motor.magnet, motor.magnet_thickness, motor.air_gap, MAGNET_TEMP_C, carter_factor=k_c
     )
+    ratio_fea = sol_slotless.mean_b_t / sol_slotted.mean_b_t
     print(f"measured Carter factor: k_C = {k_c:.4f}")
-    print(f"slotted FEA mean-under-magnet: {sol_slotted.mean_b_t:.4f} T")
-    print(f"load line with measured k_C:   {b_pred:.4f} T")
+    print(f"slotting knockdown — FEA ratio: {ratio_fea:.4f}")
+    print(f"                load line(k_C): {ratio_loadline:.4f}")
     cmp_slotted = compare_open_circuit(motor, sol_slotted, magnet_temp_c=MAGNET_TEMP_C)
     print(cmp_slotted)

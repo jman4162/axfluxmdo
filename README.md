@@ -13,13 +13,16 @@ geometry, fast analytical physics models, constraint visualization, and (in late
 solver automation and Pareto-front optimization, so that design tradeoffs can be explored
 systematically instead of by intuition-only iteration.
 
-**Phases 1–3 (current):** the analytical workbench (parametric motor object,
+**Phases 1–4 (current):** the analytical workbench (parametric motor object,
 energy-consistent torque/back-EMF/loss/thermal model, constraints, sweeps, geometry
 visualization), the 2.5D annular slice model (radius-resolved fields and losses,
 manufacturing imperfections, torque-ripple and axial-force metrics, efficiency maps),
-and the MDO layer (pymoo Pareto optimization over mixed continuous/discrete variables,
-OpenMDAO integration, sensitivity tornado charts). Evaluating a design takes
-microseconds, so a full Pareto study runs in seconds.
+the MDO layer (pymoo Pareto optimization over mixed continuous/discrete variables,
+OpenMDAO integration, sensitivity tornado charts), and external solver hooks (Gmsh
+mesh export, a GetDP magnetostatics pipeline, and sim-to-analytical residual
+analysis). Evaluating a design takes microseconds, so a full Pareto study runs in
+seconds — and the analytical layer's error budget is quantified against open-source
+FEA.
 
 ## Install
 
@@ -165,6 +168,38 @@ wrapper supports gradient-based refinement and larger coupled MDO groups.
 ![Pareto front](docs/images/05_pareto_front.png)
 ![Tornado chart](docs/images/05_tornado.png)
 
+## FEA validates the analytical layer (Phase 4)
+
+```python
+from axfluxmdo.solvers import solve_open_circuit          # needs getdp on PATH
+from axfluxmdo.validation import compare_open_circuit, measured_carter_factor
+
+slotless = solve_open_circuit(motor, magnet_temp_c=65.0)  # gmsh -> GetDP -> parsed field
+slotted = solve_open_circuit(motor, slotted=True, magnet_temp_c=65.0)
+print(compare_open_circuit(motor, slotless, magnet_temp_c=65.0))
+print(measured_carter_factor(slotless, slotted, motor))
+```
+
+The annulus is unrolled at the mean radius into a 2D planar magnetostatics problem
+(one pole pair, periodic), meshed by **Gmsh** (`pip install "axfluxmdo[fea]"`) and
+solved open-circuit by **GetDP** (external binary; tests and examples degrade
+gracefully without it — committed golden results keep the figures reproducible).
+The FEA shares the load line's exact recoil-line magnet model, so residuals isolate
+geometry that the 1D circuit cannot see. Measured on the reference motor
+(GetDP 3.5.0):
+
+- the load line **overestimates**: FEA's under-magnet mean is **−11.2%** vs B_g and
+  the fundamental is **−6.8%** vs B₁ — inter-magnet leakage and gap fringing;
+- slotting knocks the field down a further 7.6%, giving a **measured Carter factor
+  k_C = 1.44**; feeding it back into `airgap_flux_density(..., carter_factor=k_C)`
+  reproduces the FEA slotless/slotted ratio to 4 decimals.
+
+![Gap field comparison](docs/images/06_gap_field.png)
+![Unrolled 2D mesh](docs/images/06_mesh_2d.png)
+
+A 3D annular-sector mesh export (`export_3d_sector`) is included for downstream
+tooling; Elmer integration is deferred.
+
 ## What's in the model (Phase 1)
 
 - **Magnetics:** magnet load-line air-gap flux density with temperature-derated
@@ -196,7 +231,7 @@ ruff check . && ruff format --check .
 | 1 | Analytical workbench: parametric motor, torque/EMF/losses/thermal RC, constraints, pole-pair sweep, geometry viz | ✅ |
 | 2 | 2.5D annular slice model: radius-dependent flux/loading/losses, air-gap & runout sensitivity, efficiency maps | ✅ |
 | 3 | MDO: OpenMDAO components, pymoo Pareto optimization, sensitivity analysis | ✅ |
-| 4 | External solver integration: Gmsh export, GetDP/Elmer pipelines, sim-to-analytical residuals | — |
+| 4 | External solver integration: Gmsh export, GetDP pipeline, sim-to-analytical residuals (Elmer deferred) | ✅ |
 | 5 | Surrogates & Bayesian optimization for expensive design loops | — |
 
 ## Non-goals

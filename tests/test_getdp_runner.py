@@ -60,10 +60,12 @@ class TestRenderPro:
 
 class TestParseTable:
     def test_fixture_parses(self):
+        """Real GetDP 3.5.0 output excerpt: 11 raw columns, trailing six taken."""
         cols = parse_table(DATA_DIR / "gap_field_table_sample.dat")
-        assert cols.shape == (11, 6)
+        assert cols.shape == (50, 6)
         assert np.all(np.diff(cols[:, 0]) > 0)  # sorted by x
-        assert cols[0, 4] == pytest.approx(1.017)
+        assert np.all(cols[:, 1] == 0.0)  # y constant on the midline
+        assert cols[0, 4] == pytest.approx(0.0451118, rel=1e-5)  # By between magnets
 
     def test_rejects_varying_y(self, tmp_path):
         bad = tmp_path / "bad.dat"
