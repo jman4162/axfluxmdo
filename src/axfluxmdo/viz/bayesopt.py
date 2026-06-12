@@ -51,33 +51,54 @@ def plot_surrogate_slice(study: BOStudy, x_var: str, *, n: int = 100, show: bool
     uncertainty ALONG THIS SLICE only.
     """
     problem = study.problem
+    tick_labels = None
     if x_var in problem.continuous:
         lo, hi = problem.continuous[x_var]
-        sweep = np.linspace(lo, hi, n)
+        sweep_values: list = list(np.linspace(lo, hi, n))
+        sweep_axis = np.asarray(sweep_values, dtype=float)
     elif x_var in problem.integer:
         lo, hi = problem.integer[x_var]
-        sweep = np.arange(lo, hi + 1)
+        sweep_values = [int(v) for v in range(lo, hi + 1)]
+        sweep_axis = np.asarray(sweep_values, dtype=float)
     elif x_var in problem.choices:
-        sweep = np.array(problem.choices[x_var], dtype=float)
+        options = problem.choices[x_var]
+        sweep_values = list(options)
+        if all(isinstance(o, (int, float)) for o in options):
+            sweep_axis = np.asarray(options, dtype=float)
+        else:  # non-numeric choices: plot over option index, label the ticks
+            sweep_axis = np.arange(len(options), dtype=float)
+            tick_labels = [str(o) for o in options]
     else:
         raise ValueError(f"unknown design variable {x_var!r}")
 
     sense = study.objective.sense
     means, stds = [], []
-    for value in sweep:
+    for value in sweep_values:
         x = dict(study.best_x)
-        x[x_var] = int(value) if x_var in problem.integer else float(value)
+        if x_var in problem.continuous:
+            x[x_var] = float(value)
+        elif x_var in problem.integer:
+            x[x_var] = int(value)
+        else:
+            x[x_var] = value  # choice option as-is; dataset.encode handles mapping
         row = study.dataset.encode(x).reshape(1, -1)
         mean, std = study.surrogate.predict(row)
         means.append(sense * -float(mean[0]))  # minimize-space -> human
         stds.append(float(std[0]))
     means = np.array(means)
     stds = np.array(stds)
+    sweep = sweep_axis
+
+    def to_axis(value) -> float:
+        """Map a design value onto the slice axis (index for non-numeric choices)."""
+        if tick_labels is not None:
+            return float(problem.choices[x_var].index(value))
+        return float(value)
 
     fig, ax = plt.subplots(figsize=(8, 4.8))
     ax.plot(sweep, means, lw=1.8, label="GP mean (slice)")
     ax.fill_between(sweep, means - 2 * stds, means + 2 * stds, alpha=0.25, label="±2σ")
-    evaluated = np.array([float(x[x_var]) for x in study.X])
+    evaluated = np.array([to_axis(x[x_var]) for x in study.X])
     ax.scatter(
         evaluated[study.feasible],
         study.y[study.feasible],
@@ -86,8 +107,11 @@ def plot_surrogate_slice(study: BOStudy, x_var: str, *, n: int = 100, show: bool
         label="evaluated (projected)",
         zorder=3,
     )
-    best_v = float(study.best_x[x_var])
+    best_v = to_axis(study.best_x[x_var])
     ax.scatter([best_v], [study.best_value], marker="*", s=240, color="r", label="best", zorder=4)
+    if tick_labels is not None:
+        ax.set_xticks(sweep)
+        ax.set_xticklabels(tick_labels)
     ax.set_xlabel(x_var)
     ax.set_ylabel(study.objective.label)
     ax.set_title(f"Surrogate slice through the best design — {x_var}")

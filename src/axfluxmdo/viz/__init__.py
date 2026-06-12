@@ -10,6 +10,7 @@ __all__ = [
     "animate_exploded",
     "animate_rotation",
     "build_motor_assembly",
+    "can_render",
     "plot_convergence",
     "plot_efficiency_map",
     "plot_gap_field",
@@ -25,6 +26,7 @@ _PYVISTA_NAMES = {
     "animate_exploded",
     "animate_rotation",
     "build_motor_assembly",
+    "can_render",
     "plot_motor_3d",
 }
 

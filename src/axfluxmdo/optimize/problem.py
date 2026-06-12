@@ -61,13 +61,17 @@ MARGIN_CLAMP = 1e6  # |-inf| margins (thermal runaway) clamp to this violation
 _CONSTRAINT_RE = re.compile(r"^\s*([\w.]+)\s*(<=|>=|<|>)\s*([-+0-9.eE]+|inf)\s*$")
 
 
+class UnknownKeyError(ValueError):
+    """A user-facing name did not resolve to any result key or alias."""
+
+
 def resolve_key(name: str, available: Collection[str]) -> str:
     """Resolve a user-facing name (alias or canonical) to a to_dict() key."""
     candidate = ALIASES.get(name, name)
     if candidate in available:
         return candidate
     options = sorted(set(available) | set(ALIASES))
-    raise ValueError(f"unknown result key {name!r}; available keys and aliases: {options}")
+    raise UnknownKeyError(f"unknown result key {name!r}; available keys and aliases: {options}")
 
 
 @dataclass(frozen=True)

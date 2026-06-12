@@ -8,9 +8,9 @@ pv = pytest.importorskip("pyvista")
 
 from axfluxmdo.viz.pyvista_3d import (  # noqa: E402
     _annular_sector,
-    _can_render,
     animate_rotation,
     build_motor_assembly,
+    can_render,
     plot_motor_3d,
 )
 
@@ -110,9 +110,7 @@ class TestAssemblyGeometry:
             animate_rotation(reference_motor_local, tmp_path / "out.mp4")
 
 
-needs_render = pytest.mark.skipif(
-    not _can_render(), reason="no usable GL context for VTK rendering"
-)
+needs_render = pytest.mark.skipif(not can_render(), reason="no usable GL context for VTK rendering")
 
 
 @needs_render

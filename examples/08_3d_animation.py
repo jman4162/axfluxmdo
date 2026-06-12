@@ -71,9 +71,9 @@ for name, mesh_v, motor_v in checks:
 # ## Static cutaway view
 
 # %%
-from axfluxmdo.viz.pyvista_3d import _can_render  # noqa: E402
+from axfluxmdo.viz import can_render  # noqa: E402
 
-if _can_render():
+if can_render():
     from axfluxmdo.viz import plot_motor_3d
 
     plotter = plot_motor_3d(motor, screenshot=OUTPUT_DIR / "08_motor_3d.png")
@@ -95,7 +95,7 @@ if (OUTPUT_DIR / "08_motor_3d.png").exists():
 # p = 14 a 72-frame revolution is 5°/frame against a 12.9° pole pitch.
 
 # %%
-if _can_render():
+if can_render():
     from axfluxmdo.viz import animate_rotation
 
     gif = animate_rotation(motor, OUTPUT_DIR / "08_rotation.gif")
@@ -109,7 +109,7 @@ if _can_render():
 # proportional to their position in the stack.
 
 # %%
-if _can_render():
+if can_render():
     from axfluxmdo.viz import animate_exploded
 
     gif = animate_exploded(motor, OUTPUT_DIR / "08_exploded.gif")

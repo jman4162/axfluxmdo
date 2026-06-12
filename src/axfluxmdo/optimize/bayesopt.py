@@ -46,7 +46,7 @@ from axfluxmdo.models.analytical import AnalyticalResult
 from axfluxmdo.models.base import Model
 from axfluxmdo.operating_point import OperatingPoint
 from axfluxmdo.optimize.dataset import DesignDataset
-from axfluxmdo.optimize.problem import DesignProblem, Objective
+from axfluxmdo.optimize.problem import DesignProblem, Objective, UnknownKeyError
 from axfluxmdo.optimize.surrogate import GPSurrogate, Surrogate
 
 SOFT_PENALTY_FRACTION = 0.1
@@ -254,9 +254,7 @@ def _resolve_objective(
             enforce_model_constraints=enforce_model_constraints,
         )
         return problem, problem.objectives[0]
-    except ValueError as exc:
-        if "unknown result key" not in str(exc):
-            raise
+    except UnknownKeyError:
         # Novel key supplied by expensive_fn: anchor the problem on a benign
         # built-in objective for evaluation plumbing; the BO loop reads the
         # novel key from the merged outputs.

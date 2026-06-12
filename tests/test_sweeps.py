@@ -72,3 +72,11 @@ class TestDottedPathSweeps:
             reference_motor, reference_op, "air_gap", [0.0006, 0.001], model=AnnularModel()
         )
         assert sweep.results[0].torque_nm > sweep.results[1].torque_nm
+
+
+class TestReplaceFieldGuard:
+    def test_two_level_dotted_path_clear_error(self, reference_motor):
+        from axfluxmdo.sweeps import replace_field
+
+        with pytest.raises(ValueError, match="exceeds one level"):
+            replace_field(reference_motor, "tolerances.runout_m.subfield", 1.0)

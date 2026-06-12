@@ -154,3 +154,52 @@ class TestBayesoptPlots:
 
         with pytest.raises(ValueError, match="unknown design variable"):
             plot_surrogate_slice(bo_study, "bogus")
+
+
+class TestReviewRegressions:
+    def test_surrogate_slice_string_choices(self, reference_motor, reference_op):
+        """plot_surrogate_slice must handle non-numeric choice variables."""
+        pytest.importorskip("sklearn")
+        from axfluxmdo.optimize import bayesian_optimize
+        from axfluxmdo.viz import plot_surrogate_slice
+
+        study = bayesian_optimize(
+            reference_motor,
+            reference_op,
+            variables={
+                "outer_radius": (0.06, 0.10),
+                "magnet_shape": ["wedge", "rectangular"],
+            },
+            objective="maximize_torque_density",
+            n_initial=5,
+            n_iterations=3,
+            seed=4,
+        )
+        fig = plot_surrogate_slice(study, "magnet_shape")
+        assert fig is not None
+        plt.close(fig)
+
+    def test_plot_pareto_invalid_color_key(self, reference_motor, reference_op):
+        pytest.importorskip("pymoo")
+        from axfluxmdo.optimize import optimize_pareto
+        from axfluxmdo.optimize.problem import UnknownKeyError
+        from axfluxmdo.viz import plot_pareto
+
+        study = optimize_pareto(
+            reference_motor,
+            reference_op,
+            variables={"outer_radius": (0.06, 0.10)},
+            objectives=["maximize_torque_density", "maximize_efficiency"],
+            pop_size=8,
+            n_gen=2,
+            seed=1,
+        )
+        with pytest.raises(UnknownKeyError):
+            plot_pareto(study, color="not_a_key")
+
+    def test_sweep_plot_bogus_field(self, reference_motor, reference_op):
+        from axfluxmdo.sweeps import sweep_parameter
+
+        sweep = sweep_parameter(reference_motor, reference_op, "air_gap", [0.0008, 0.001])
+        with pytest.raises(KeyError):
+            sweep.plot(fields=("bogus_field",))

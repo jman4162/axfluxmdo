@@ -26,6 +26,11 @@ def replace_field(motor: AxialFluxMotor, name: str, value) -> AxialFluxMotor:
     dataclass and re-attaches it — the mechanism for sweeping and optimizing
     manufacturing imperfections.
     """
+    if name.count(".") > 1:
+        raise ValueError(
+            f"dotted field path {name!r} exceeds one level; only 'outer.inner' "
+            "(e.g. 'tolerances.runout_m') is supported"
+        )
     if "." not in name:
         return dataclasses.replace(motor, **{name: value})
     outer, inner = name.split(".", 1)

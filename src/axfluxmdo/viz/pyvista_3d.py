@@ -201,7 +201,7 @@ def build_motor_assembly(
 
 
 @functools.lru_cache(maxsize=1)
-def _can_render() -> bool:
+def can_render() -> bool:
     """Probe whether an off-screen VTK render is possible.
 
     Run in a SUBPROCESS: without a usable GL context VTK can segfault rather
