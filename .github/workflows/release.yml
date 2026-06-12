@@ -1,0 +1,44 @@
+name: Release
+
+# Publishes to PyPI via trusted publishing (no stored tokens). One-time setup
+# required on pypi.org: add a trusted publisher for project "axfluxmdo" with
+# owner jman4162, repository axfluxmdo, workflow release.yml. For a TestPyPI
+# dry run, configure the same on test.pypi.org and dispatch with target=testpypi.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        type: choice
+        options: [pypi, testpypi]
+        default: testpypi
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          pip install build twine
+          python -m build
+      - name: Check
+        run: twine check dist/*
+      - name: Publish to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+      - name: Publish to PyPI
+        if: github.event_name == 'push' || inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "axfluxmdo"
-version = "0.6.0"
+version = "0.7.0"
 description = "Parametric modeling, analysis, and multidisciplinary design optimization of axial-flux permanent-magnet motors"
 readme = "README.md"
 license = "MIT"
@@ -21,6 +21,7 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -58,11 +59,24 @@ dev = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/jman4162/axfluxmdo"
 Repository = "https://github.com/jman4162/axfluxmdo"
+Documentation = "https://github.com/jman4162/axfluxmdo#readme"
 Issues = "https://github.com/jman4162/axfluxmdo/issues"
+Changelog = "https://github.com/jman4162/axfluxmdo/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/axfluxmdo"]
+
+[tool.hatch.build.targets.sdist]
+# Keep examples/docs in the sdist (portfolio value); exclude local junk that
+# iCloud or tooling may drop into the working tree.
+exclude = [
+    ".venv*",
+    "examples/output",
+    ".github",
+    ".claude",
+]
 
 [tool.ruff]
 line-length = 100

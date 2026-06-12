@@ -27,9 +27,18 @@ FEA.
 ## Install
 
 ```bash
+pip install axfluxmdo                  # core (analytical + annular models, 2D viz)
+pip install "axfluxmdo[opt]"           # + pymoo / OpenMDAO / scikit-learn optimization
+pip install "axfluxmdo[fea]"           # + gmsh mesh export (GetDP is a separate binary)
+pip install "axfluxmdo[viz3d]"         # + PyVista 3D rendering/animations
+```
+
+For development:
+
+```bash
 git clone https://github.com/jman4162/axfluxmdo.git
 cd axfluxmdo
-pip install -e ".[dev]"
+pip install -e ".[dev,opt,fea,viz3d]"
 ```
 
 ## Quickstart
@@ -80,7 +89,7 @@ AnalyticalResult
     magnet_temp_c: 65 <= 80 [OK, margin +18.8%]
 ```
 
-![Motor geometry](docs/images/geometry.png)
+![Motor geometry](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/geometry.png)
 
 ## Pole-pair tradeoff in four lines
 
@@ -91,7 +100,7 @@ sweep = sweep_pole_pairs(motor, op, pole_pairs=range(4, 21, 2))
 sweep.plot(show=True)
 ```
 
-![Pole-pair tradeoff](docs/images/pole_pair_tradeoff.png)
+![Pole-pair tradeoff](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/pole_pair_tradeoff.png)
 
 At fixed air-gap field and electrical loading, torque is independent of pole count — the
 real tradeoff is yoke saturation at low `p` (p = 4 is infeasible here: the fixed stator
@@ -131,8 +140,8 @@ only where physics is genuinely radius-dependent:
 - **Constraint-aware efficiency maps** over the speed–torque plane, with the binding
   constraint recorded for every infeasible cell.
 
-![Radial profiles](docs/images/03_radial_profiles.png)
-![Efficiency map](docs/images/03_efficiency_map.png)
+![Radial profiles](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/03_radial_profiles.png)
+![Efficiency map](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/03_efficiency_map.png)
 
 ## Pareto optimization (Phase 3)
 
@@ -165,8 +174,8 @@ feasible**. One-at-a-time sensitivities (`compute_sensitivities` + `plot_tornado
 which variables actually move a chosen design, and an OpenMDAO `ExplicitComponent`
 wrapper supports gradient-based refinement and larger coupled MDO groups.
 
-![Pareto front](docs/images/05_pareto_front.png)
-![Tornado chart](docs/images/05_tornado.png)
+![Pareto front](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/05_pareto_front.png)
+![Tornado chart](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/05_tornado.png)
 
 ## FEA validates the analytical layer (Phase 4)
 
@@ -194,8 +203,8 @@ geometry that the 1D circuit cannot see. Measured on the reference motor
   k_C = 1.44**; feeding it back into `airgap_flux_density(..., carter_factor=k_C)`
   reproduces the FEA slotless/slotted ratio to 4 decimals.
 
-![Gap field comparison](docs/images/06_gap_field.png)
-![Unrolled 2D mesh](docs/images/06_mesh_2d.png)
+![Gap field comparison](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/06_gap_field.png)
+![Unrolled 2D mesh](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/06_mesh_2d.png)
 
 A 3D annular-sector mesh export (`export_3d_sector`) is included for downstream
 tooling; Elmer integration is deferred.
@@ -233,8 +242,8 @@ persistable `DesignDataset` (JSON Lines), and recommendations are ranked by the
 surrogate's pessimistic estimate so unverified corners of the space don't win on
 optimism.
 
-![BO convergence](docs/images/07_convergence.png)
-![Surrogate slice](docs/images/07_surrogate_slice.png)
+![BO convergence](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/07_convergence.png)
+![Surrogate slice](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/07_surrogate_slice.png)
 
 ## 3D visualization
 
@@ -252,9 +261,9 @@ slotted stator with copper coils, and the yoke — every solid built from the sa
 `AxialFluxMotor` dimensions the physics models use (mesh volumes match the analytic
 volume properties to <0.1%, tested).
 
-![Motor 3D cutaway](docs/images/08_motor_3d.png)
-![Spinning rotor](docs/images/08_rotation.gif)
-![Exploded assembly](docs/images/08_exploded.gif)
+![Motor 3D cutaway](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/08_motor_3d.png)
+![Spinning rotor](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/08_rotation.gif)
+![Exploded assembly](https://raw.githubusercontent.com/jman4162/axfluxmdo/main/docs/images/08_exploded.gif)
 
 ## What's in the model (Phase 1)
 
@@ -291,6 +300,30 @@ All five SPEC phases are shipped.
 | 3 | MDO: OpenMDAO components, pymoo Pareto optimization, sensitivity analysis | ✅ |
 | 4 | External solver integration: Gmsh export, GetDP pipeline, sim-to-analytical residuals (Elmer deferred) | ✅ |
 | 5 | Surrogates & Bayesian optimization for expensive design loops | ✅ |
+
+## Model fidelity & known limitations
+
+The fast layers are deliberately simple; know what they leave out before trusting
+absolute numbers (all of these are also documented at the relevant docstrings):
+
+- **Single-gap topology** (one rotor, one stator). Real axial-flux machines are often
+  double-gap (TORUS/YASA/AFIR); the single-sided rotor carries a large unbalanced axial
+  pull — `AnnularResult.axial_force_n` reports it (≈5–6 kN for the reference motor) and
+  the bearings must take it.
+- **The 1D load line is an upper bound on the gap field.** FEA validation (Phase 4)
+  measured −11% on the under-magnet mean and −7% on the fundamental from inter-magnet
+  leakage and fringing, plus a Carter factor k_C = 1.44 for the slotted stator. Both
+  models accept `carter_factor=` to fold a measured correction back in.
+- **No magnetic saturation** — torque is linear in current; the yoke-flux and
+  current-density constraints are the guards.
+- **Voltage constraint neglects inductive drop** (I·X_L) — optimistic at high electrical
+  frequency with tight bus margins.
+- **Magnet temperature is fixed at ambient + 40 °C**, not coupled to the solved winding
+  temperature.
+- **Thermal model is a single lumped RC** with constant resistance (no speed-dependent
+  cooling); 50% of core loss is assigned to the winding node.
+- **Losses omitted**: AC copper (skin/proximity), magnet eddy currents, PWM harmonics;
+  mechanical loss defaults to zero (parameterizable).
 
 ## Non-goals
 

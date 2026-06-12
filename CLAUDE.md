@@ -14,6 +14,14 @@ Surrogate/BO invariants:
 - Surrogate training uses SOFT penalties for infeasible points (worst feasible + 10% of range) — never feed `PENALTY_OBJECTIVE=1e9` into the GP.
 - GP kernel must keep per-dimension (ARD) length scales — the ordinal feature encoding mixes scales.
 
+Release/PyPI invariants (v0.7.0):
+- README image links must stay ABSOLUTE (raw.githubusercontent.com) — relative paths break on the PyPI page.
+- `src/axfluxmdo/py.typed` ships in the wheel (PEP 561); keep it.
+- Publishing: tag `v*` triggers `.github/workflows/release.yml` (trusted publishing, no tokens). One-time setup John must do on pypi.org (and test.pypi.org for dry runs): add trusted publisher for project axfluxmdo / repo jman4162/axfluxmdo / workflow release.yml. `workflow_dispatch` with target=testpypi does a dry run.
+- sdist deliberately includes examples/docs (~8.5 MB, portfolio value); it excludes `.venv*` and `.github` — iCloud can drop `".venv 2"`-style duplicate dirs into the tree, which the gitignore (`.venv*/`) and sdist excludes both guard against.
+- `carter_factor` defaults to 1.0 on both models — all golden values unchanged; the knob exists so measured FEA corrections can be fed back.
+- CHANGELOG.md is keep-a-changelog; add an entry per release.
+
 3D-viz invariants:
 - pyvista/imageio live in the `[viz3d]` extra; `import axfluxmdo.viz` never imports pyvista/vtk (PEP 562, test-enforced).
 - Animations are GIF-only (no imageio-ffmpeg/MP4).
