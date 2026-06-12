@@ -20,9 +20,10 @@ def _assert_clean_import(module: str, forbidden: list[str]):
 @pytest.mark.parametrize(
     "module,forbidden",
     [
-        ("axfluxmdo", ["pymoo", "openmdao", "sklearn", "gmsh"]),
+        ("axfluxmdo", ["pymoo", "openmdao", "sklearn", "gmsh", "pyvista", "vtk"]),
         ("axfluxmdo.optimize", ["pymoo", "openmdao", "sklearn"]),
         ("axfluxmdo.solvers", ["gmsh"]),
+        ("axfluxmdo.viz", ["pyvista", "vtk"]),
     ],
 )
 def test_no_eager_optional_imports(module, forbidden):

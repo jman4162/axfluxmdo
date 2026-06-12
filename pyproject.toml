@@ -44,6 +44,10 @@ opt = [
 fea = [
     "gmsh>=4.11",
 ]
+viz3d = [
+    "pyvista>=0.44",
+    "imageio>=2.28",
+]
 dev = [
     "pytest>=8",
     "pytest-cov",
