@@ -54,6 +54,7 @@ class ElectricalSteel:
     k_e: float  # eddy-current coefficient, W/kg per (Hz**2 * T**2)
     b_sat_t: float = 1.6  # saturation knee used as a design-limit proxy, tesla
     stacking_factor: float = 0.95
+    mu_r: float = 4000.0  # linear relative permeability (FEA Phase 4; nonlinear BH future)
 
     def core_loss_w_per_kg(self, f_hz: float, b_peak_t: float) -> float:
         """Specific core loss at electrical frequency f and peak flux density B."""
