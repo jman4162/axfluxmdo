@@ -4,9 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phase 1 (analytical workbench) is implemented: parametric `AxialFluxMotor`, `AnalyticalModel` with energy-consistent torque/EMF/loss/thermal physics, constraint records, parameter sweeps, and geometry visualization, with a full test suite. Phases 2–5 (annular 2.5D model, MDO, external solvers, surrogates) are not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+Phases 1–2 are implemented: the analytical workbench (`AnalyticalModel`) and the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`). Phases 3–5 (MDO, external solvers, surrogates) are not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
 
-Physics invariants enforced by tests (do not break): torque and back-EMF derive from the same flux linkage so `m·E_rms·I_rms == T·ω_m` holds to ~1e-9 relative; the energy balance `P_in == P_out + P_cu + P_core + P_mech` likewise; `tests/test_regression.py` pins golden values for the SPEC reference motor — if a deliberate physics change shifts them, re-verify by hand (the hand calculation is in that file's docstring) before updating.
+Physics invariants enforced by tests (do not break):
+- Torque and back-EMF derive from the same flux linkage so `m·E_rms·I_rms == T·ω_m` holds to ~1e-9 relative, and the energy balance `P_in == P_out + P_cu + P_core + P_mech` likewise — in BOTH models, for any imperfections.
+- `AnnularModel(n_slices=1)` reproduces `AnalyticalModel` on every `to_dict()` key at 1e-12 relative (perfect gap, wedge magnets), and torque/EMF match at ANY slice count for uniform parameters (the flux-linkage sum is additive; keep `math.fsum`).
+- `AnnularResult.to_dict()` is additive-only over `AnalyticalResult` keys (the flat keys are a stable interface for Phase 3's `optimize_pareto`).
+- Runout sign: the load line is convex in the gap, so mean torque slightly *increases* with runout (Jensen); the penalties are `torque_ripple_proxy` and axial force. Never "fix" tests toward the intuitive wrong sign.
+- `tests/test_regression.py` pins golden values for the reference motor (both models) — if a deliberate physics change shifts them, re-verify by hand (hand calculations are in that file) before updating.
 
 `AnalyticalResult.to_dict()` keys and constraint names (`winding_temp_c`, `electrical_frequency_hz`, ...) are a stable interface — Phase 3's `optimize_pareto` will parse SPEC-style constraint strings against them.
 

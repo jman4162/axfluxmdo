@@ -13,10 +13,11 @@ geometry, fast analytical physics models, constraint visualization, and (in late
 solver automation and Pareto-front optimization, so that design tradeoffs can be explored
 systematically instead of by intuition-only iteration.
 
-**Phase 1 (current):** the analytical workbench — a parametric motor object, an
-energy-consistent torque/back-EMF/loss/thermal model, constraint evaluation, parameter
-sweeps, and 2D geometry visualization. Evaluating a design takes microseconds, so it is
-suitable for wide design-space exploration.
+**Phases 1–2 (current):** the analytical workbench (parametric motor object,
+energy-consistent torque/back-EMF/loss/thermal model, constraints, sweeps, geometry
+visualization) plus the 2.5D annular slice model (radius-resolved fields and losses,
+manufacturing imperfections, torque-ripple and axial-force metrics, efficiency maps).
+Evaluating a design takes microseconds, so wide design-space exploration is cheap.
 
 ## Install
 
@@ -92,6 +93,42 @@ real tradeoff is yoke saturation at low `p` (p = 4 is infeasible here: the fixed
 core would need to carry 2.3 T) versus electrical frequency, switching burden, and ripple
 at high `p`. See [`examples/`](examples/) for executed notebooks.
 
+## The 2.5D annular model (Phase 2)
+
+```python
+import dataclasses
+from axfluxmdo import GapImperfections
+from axfluxmdo.models import AnnularModel, compute_efficiency_map
+
+imperfect = dataclasses.replace(
+    motor,
+    tolerances=GapImperfections(gap_offset_m=1e-4, coning_m=2e-4, runout_m=3e-4),
+    magnet_shape="rectangular",
+)
+result = AnnularModel(n_slices=32).evaluate(imperfect, op)
+print(result.torque_ripple_proxy, result.axial_force_n)
+
+emap = compute_efficiency_map(motor, op, max_speed_rpm=3000, max_torque_nm=12)
+emap.plot(show=True)
+```
+
+The disk machine is split into radial annuli; torque and back-EMF derive from the same
+summed flux linkage, so for a perfect machine the annular model agrees with the
+analytical layer **to machine precision** (pinned by tests) — added fidelity appears
+only where physics is genuinely radius-dependent:
+
+- **Yoke saturation binds at the outer radius** (pole pitch widens with r); the
+  mean-radius proxy of Layer 1 underestimates it.
+- **Manufacturing imperfections**: uniform gap error, rotor coning (gap varying with
+  radius), and runout (1/rev gap oscillation, averaged analytically — the load line is
+  convex in the gap, so mean torque *rises* slightly with runout; the real penalties are
+  the 1/rev ripple proxy and the multi-kN axial-force modulation).
+- **Constraint-aware efficiency maps** over the speed–torque plane, with the binding
+  constraint recorded for every infeasible cell.
+
+![Radial profiles](docs/images/03_radial_profiles.png)
+![Efficiency map](docs/images/03_efficiency_map.png)
+
 ## What's in the model (Phase 1)
 
 - **Magnetics:** magnet load-line air-gap flux density with temperature-derated
@@ -121,7 +158,7 @@ ruff check . && ruff format --check .
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
 | 1 | Analytical workbench: parametric motor, torque/EMF/losses/thermal RC, constraints, pole-pair sweep, geometry viz | ✅ |
-| 2 | 2.5D annular slice model: radius-dependent flux/loading/losses, air-gap & runout sensitivity, efficiency maps | — |
+| 2 | 2.5D annular slice model: radius-dependent flux/loading/losses, air-gap & runout sensitivity, efficiency maps | ✅ |
 | 3 | MDO: OpenMDAO components, pymoo Pareto optimization, sensitivity analysis | — |
 | 4 | External solver integration: Gmsh export, GetDP/Elmer pipelines, sim-to-analytical residuals | — |
 | 5 | Surrogates & Bayesian optimization for expensive design loops | — |
