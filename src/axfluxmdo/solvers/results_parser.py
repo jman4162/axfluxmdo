@@ -21,8 +21,7 @@ def parse_table(path: str | Path) -> np.ndarray:
     data = np.loadtxt(path, comments="#", ndmin=2)
     if data.shape[1] < 6:
         raise ValueError(
-            f"{path}: expected >= 6 columns (x y z vx vy vz at the end), "
-            f"got {data.shape[1]}"
+            f"{path}: expected >= 6 columns (x y z vx vy vz at the end), got {data.shape[1]}"
         )
     cols = data[:, -6:]
     if np.ptp(cols[:, 1]) > 1e-9 or np.ptp(cols[:, 2]) > 1e-9:

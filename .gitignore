@@ -22,3 +22,4 @@ examples/output/
 
 # OS
 .DS_Store
+.venv.nosync/

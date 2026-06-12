@@ -16,9 +16,7 @@ class TestLazyImport:
             "import sys; import axfluxmdo.solvers; "
             "assert 'gmsh' not in sys.modules, 'gmsh imported eagerly'"
         )
-        proc = subprocess.run(
-            [sys.executable, "-c", code], capture_output=True, text=True
-        )
+        proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
         assert proc.returncode == 0, proc.stderr
 
 

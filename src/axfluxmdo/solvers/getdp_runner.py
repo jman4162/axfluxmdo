@@ -36,9 +36,7 @@ def find_getdp() -> str | None:
     if override:
         path = Path(override).expanduser()
         if not path.is_file():
-            raise SolverError(
-                f"{GETDP_ENV_VAR}={override!r} does not point to an existing file"
-            )
+            raise SolverError(f"{GETDP_ENV_VAR}={override!r} does not point to an existing file")
         return str(path)
     return shutil.which("getdp")
 
@@ -76,9 +74,7 @@ def run_getdp(
         "2",
     ]
     try:
-        proc = subprocess.run(
-            cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout
-        )
+        proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         raise SolverError(f"getdp timed out after {timeout}s: {' '.join(cmd)}") from exc
     if proc.returncode != 0:
