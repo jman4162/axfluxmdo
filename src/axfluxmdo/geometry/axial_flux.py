@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from axfluxmdo.geometry.tolerances import PERFECT_GAP, GapImperfections
 from axfluxmdo.materials.electrical import COPPER, Conductor
 from axfluxmdo.materials.magnetic import M19_29GA, N42, ElectricalSteel, MagnetMaterial
 
@@ -37,6 +38,7 @@ class AxialFluxMotor:
 
     # --- winding / magnet layout ---
     magnet_arc_ratio: float = 0.85  # pole coverage alpha_m (fraction of pole pitch)
+    magnet_shape: str = "wedge"  # "wedge": alpha(r)=alpha_m; "rectangular": constant width
     slot_depth: float = 0.012  # m, axial depth of the stator winding window
     slot_width_fraction: float = 0.5  # circumferential fraction of annulus open to copper
     winding_factor: float = 0.933
@@ -51,6 +53,9 @@ class AxialFluxMotor:
     # --- thermal / structure lumped parameters ---
     thermal_resistance_k_per_w: float = 1.2  # winding -> ambient
     structure_mass_factor: float = 0.25  # housing/shaft mass as fraction of active mass
+
+    # --- manufacturing imperfections (consumed by AnnularModel only) ---
+    tolerances: GapImperfections = field(default=PERFECT_GAP)
 
     def __post_init__(self) -> None:
         if self.inner_radius <= 0.0:
@@ -73,6 +78,16 @@ class AxialFluxMotor:
             raise ValueError("magnet_thickness must be positive")
         if not 0.0 < self.slot_width_fraction <= 1.0:
             raise ValueError("slot_width_fraction must be in (0, 1]")
+        if self.magnet_shape not in ("wedge", "rectangular"):
+            raise ValueError("magnet_shape must be 'wedge' or 'rectangular'")
+        min_gap = (
+            self.air_gap
+            + self.tolerances.gap_offset_m
+            - abs(self.tolerances.coning_m) / 2.0
+            - self.tolerances.runout_m
+        )
+        if min_gap <= 0.0:
+            raise ValueError("tolerances close the air gap (minimum local gap <= 0)")
 
     # --- derived geometry ---
 
