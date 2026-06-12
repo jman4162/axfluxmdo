@@ -12,6 +12,7 @@ and gauges; a unit test pins the 60 Hz / 1.5 T point to the datasheet band.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 
@@ -88,3 +89,70 @@ def airgap_flux_density(
         raise ValueError("air_gap must be non-negative")
     br = magnet.remanence_at(magnet_temp_c)
     return br * magnet_thickness / (magnet_thickness + magnet.mu_r * carter_factor * air_gap)
+
+
+def airgap_flux_density_runout_mean(
+    magnet: MagnetMaterial,
+    magnet_thickness: float,
+    mean_gap: float,
+    runout_amp: float,
+    magnet_temp_c: float = 20.0,
+    carter_factor: float = 1.0,
+) -> float:
+    """Circumferential mean of B over a 1/rev runout g(theta) = g_mean + d*cos(theta).
+
+    The load line B(g) = Br*t_m/(t_m + mu_r*k_C*g) is a Moebius function of g,
+    so the theta-average is analytic:
+
+        <B> = Br*t_m / sqrt((t_m + mu_r*k_C*g_mean)^2 - (mu_r*k_C*d)^2)
+
+    B(g) is convex in g, so by Jensen's inequality <B> >= B(g_mean): runout
+    slightly *increases* the mean flux density (and torque); its real penalties
+    are the 1/rev torque/force modulation. Reduces exactly to
+    :func:`airgap_flux_density` at runout_amp = 0.
+    """
+    a = magnet_thickness + magnet.mu_r * carter_factor * mean_gap
+    d = magnet.mu_r * carter_factor * runout_amp
+    if d >= a:
+        raise ValueError("runout closes the air gap (runout_amp too large)")
+    br = magnet.remanence_at(magnet_temp_c)
+    return br * magnet_thickness / math.sqrt(a**2 - d**2)
+
+
+def airgap_flux_density_runout_extremes(
+    magnet: MagnetMaterial,
+    magnet_thickness: float,
+    mean_gap: float,
+    runout_amp: float,
+    magnet_temp_c: float = 20.0,
+    carter_factor: float = 1.0,
+) -> tuple[float, float]:
+    """(B at the tightest gap g_mean - d, B at the widest gap g_mean + d)."""
+    b_tight = airgap_flux_density(
+        magnet, magnet_thickness, mean_gap - runout_amp, magnet_temp_c, carter_factor
+    )
+    b_wide = airgap_flux_density(
+        magnet, magnet_thickness, mean_gap + runout_amp, magnet_temp_c, carter_factor
+    )
+    return b_tight, b_wide
+
+
+def airgap_b_squared_runout_mean(
+    magnet: MagnetMaterial,
+    magnet_thickness: float,
+    mean_gap: float,
+    runout_amp: float,
+    magnet_temp_c: float = 20.0,
+    carter_factor: float = 1.0,
+) -> float:
+    """Circumferential mean of B^2 over a 1/rev runout (for axial magnetic pull).
+
+    <B^2> = Br^2*t_m^2*(t_m + mu_r*k_C*g_mean)
+            / ((t_m + mu_r*k_C*g_mean)^2 - (mu_r*k_C*d)^2)^(3/2)
+    """
+    a = magnet_thickness + magnet.mu_r * carter_factor * mean_gap
+    d = magnet.mu_r * carter_factor * runout_amp
+    if d >= a:
+        raise ValueError("runout closes the air gap (runout_amp too large)")
+    br = magnet.remanence_at(magnet_temp_c)
+    return br**2 * magnet_thickness**2 * a / (a**2 - d**2) ** 1.5

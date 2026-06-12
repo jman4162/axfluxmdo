@@ -68,3 +68,75 @@ class TestAirgapFluxDensity:
             airgap_flux_density(N42, 0.0, 0.001)
         with pytest.raises(ValueError):
             airgap_flux_density(N42, 0.004, -0.001)
+
+
+class TestRunoutClosedForms:
+    """Closed-form theta-averages verified against trapezoidal quadrature.
+
+    The trapezoid rule is spectrally accurate on smooth periodic integrands,
+    so 64 points already reach near machine precision.
+    """
+
+    T_M, G, DELTA = 0.004, 0.0008, 0.0003
+
+    def _quad_mean(self, func, n):
+        import math
+
+        from axfluxmdo.materials import airgap_flux_density
+
+        total = 0.0
+        for k in range(n):
+            theta = 2 * math.pi * k / n
+            g = self.G + self.DELTA * math.cos(theta)
+            total += func(airgap_flux_density(N42, self.T_M, g))
+        return total / n
+
+    def test_mean_b_matches_quadrature(self):
+        from axfluxmdo.materials.magnetic import airgap_flux_density_runout_mean
+
+        closed = airgap_flux_density_runout_mean(N42, self.T_M, self.G, self.DELTA)
+        for n in (64, 256):
+            assert closed == pytest.approx(self._quad_mean(lambda b: b, n), rel=1e-10)
+
+    def test_mean_b_squared_matches_quadrature(self):
+        from axfluxmdo.materials.magnetic import airgap_b_squared_runout_mean
+
+        closed = airgap_b_squared_runout_mean(N42, self.T_M, self.G, self.DELTA)
+        for n in (64, 256):
+            assert closed == pytest.approx(self._quad_mean(lambda b: b * b, n), rel=1e-10)
+
+    def test_zero_runout_reduces_to_load_line(self):
+        from axfluxmdo.materials.magnetic import (
+            airgap_b_squared_runout_mean,
+            airgap_flux_density_runout_mean,
+        )
+
+        b0 = airgap_flux_density(N42, self.T_M, self.G)
+        assert airgap_flux_density_runout_mean(N42, self.T_M, self.G, 0.0) == pytest.approx(
+            b0, rel=1e-15
+        )
+        assert airgap_b_squared_runout_mean(N42, self.T_M, self.G, 0.0) == pytest.approx(
+            b0**2, rel=1e-15
+        )
+
+    def test_jensen_mean_exceeds_b_at_mean_gap(self):
+        from axfluxmdo.materials.magnetic import airgap_flux_density_runout_mean
+
+        mean_b = airgap_flux_density_runout_mean(N42, self.T_M, self.G, self.DELTA)
+        assert mean_b > airgap_flux_density(N42, self.T_M, self.G)
+
+    def test_extremes_bracket_mean(self):
+        from axfluxmdo.materials.magnetic import (
+            airgap_flux_density_runout_extremes,
+            airgap_flux_density_runout_mean,
+        )
+
+        b_tight, b_wide = airgap_flux_density_runout_extremes(N42, self.T_M, self.G, self.DELTA)
+        mean_b = airgap_flux_density_runout_mean(N42, self.T_M, self.G, self.DELTA)
+        assert b_wide < mean_b < b_tight
+
+    def test_gap_closing_runout_raises(self):
+        from axfluxmdo.materials.magnetic import airgap_flux_density_runout_mean
+
+        with pytest.raises(ValueError, match="runout"):
+            airgap_flux_density_runout_mean(N42, self.T_M, 0.0008, 0.01)
