@@ -2,9 +2,9 @@
 
 The annular model splits the disk machine into radial slices and evaluates
 the field, torque contribution, yoke loading, and core loss **per slice**. It
-adds exactly the physics that is genuinely radius-dependent — and nothing
-else, which is why it agrees with the analytical model *to machine precision*
-for a perfect machine.
+adds the physics that is genuinely radius-dependent and nothing else, which
+is why it agrees with the analytical model to machine precision for a
+perfect machine.
 
 Code: [`axfluxmdo.models.annular_2p5d`](../api/models.md),
 [`axfluxmdo.geometry.tolerances`](../api/geometry.md),
@@ -26,14 +26,14 @@ $$
 Torque and EMF come from the summed $\lambda$ exactly as in
 [Layer 1](analytical-model.md). Because the analytical model's
 $\lambda \propto B_1 A_g$ is **linear in area**, and $\sum_k dA_k = A_g$
-exactly, a radius-uniform $B_1$ gives the *identical* $\lambda$ at any slice
-count — no discretization error at all. Only quantities nonlinear in radius
+exactly, a radius-uniform $B_1$ gives the identical $\lambda$ at any slice
+count, with no discretization error at all. Only quantities nonlinear in radius
 (core loss via $B_y(r)^{1.68}$, the saturation maximum) are discretized, and
 they converge fast. The test suite pins single-slice parity on **every**
 output key at 10⁻¹² relative.
 
 The energy identity $m E I = T \omega_m$ survives unchanged because both
-quantities still derive from the one summed $\lambda$ — per slice and in
+quantities still derive from the one summed $\lambda$, per slice and in
 aggregate.
 
 ## 2. Radius-dependent yoke loading: why saturation binds at $r_o$
@@ -45,11 +45,11 @@ $$
 B_y(r) \;=\; \frac{B_g(r)\,\alpha(r)\, \pi r}{2\, p\, t_\mathrm{core}\, k_\mathrm{stack}} .
 $$
 
-The yoke flux density is **largest at the outer radius** — the analytical
+The yoke flux density is largest at the outer radius, so the analytical
 model's mean-radius proxy underestimates the true maximum. The annular
 model's saturation constraint uses $\max_k B_y(r_k)$; the practical
-consequence showed up immediately in validation: a $p = 8$ variant that
-Layer 1 called feasible saturates at 1.77 T at $r_o$ (limit 1.6 T).
+consequence appeared immediately in validation: a $p = 8$ variant that
+Layer 1 called feasible saturates at 1.77 T at $r_o$ against a 1.6 T limit.
 
 ![Radial profiles](../images/03_radial_profiles.png)
 
@@ -65,7 +65,7 @@ g(r, \theta) = g_0 + \underbrace{\Delta g}_{\text{offset}}
  + \underbrace{\delta \cos\theta}_{\text{runout}} .
 $$
 
-Offset and coning are axisymmetric — they enter the per-slice load line
+Offset and coning are axisymmetric, so they enter the per-slice load line
 directly. Runout varies around the circumference and needs an average.
 
 ### The runout average, in closed form
@@ -85,7 +85,7 @@ $$
 \langle B \rangle_\theta \;=\; \frac{B_r\, h_m}{\sqrt{(h_m + \mu_r \bar g)^2 - (\mu_r\delta)^2}} .
 $$
 
-### The counterintuitive sign — Jensen's inequality
+### The counterintuitive sign: Jensen's inequality
 
 $B(g)$ is **convex** in $g$ (second derivative positive). Jensen's
 inequality then guarantees
@@ -94,15 +94,16 @@ $$
 \langle B(\bar g + \delta\cos\theta) \rangle \;\ge\; B(\bar g) :
 $$
 
-runout slightly **increases** mean flux and mean torque. The closed form
-confirms it ($\sqrt{a^2-b^2} < a$). Runout's real penalties are elsewhere:
+runout slightly increases mean flux and mean torque. The closed form
+confirms it, since $\sqrt{a^2-b^2} < a$. Runout's real penalties are
+elsewhere:
 
-- a **1/rev torque modulation**, reported as `torque_ripple_proxy`
+- a 1/rev torque modulation, reported as `torque_ripple_proxy`
   $= (\lambda_+ - \lambda_-)/(\lambda_+ + \lambda_-)$ from the gap extremes;
-- **axial-force modulation** on the bearings.
+- axial-force modulation on the bearings.
 
-This sign is test-pinned. If a future change makes runout *reduce* mean
-torque, the model — not the test — is wrong.
+This sign is test-pinned. If a future change makes runout reduce mean
+torque, the model is wrong, not the test.
 
 ## 4. Axial force from the Maxwell stress tensor
 
@@ -114,24 +115,25 @@ F_z \;=\; \sum_k \frac{\langle B_g^2\rangle_k}{2\mu_0}\, \alpha_k\, dA_k ,
 $$
 
 with $\langle B^2\rangle$ also closed-form under runout
-($\propto a/(a^2-b^2)^{3/2}$). For the reference motor this is **≈5.6 kN of
-one-sided pull** — the single-gap topology's defining mechanical burden (a
-double-gap machine balances it). The result string says so explicitly.
+($\propto a/(a^2-b^2)^{3/2}$). For the reference motor this is about 5.6 kN
+of one-sided pull, the defining mechanical burden of a single-gap topology;
+a double-gap machine balances it. The result string reports this
+explicitly.
 
 ## 5. Efficiency maps
 
 Because the model has no saturation, torque is linear in current and
 torque-per-amp is speed-independent: one probe evaluation inverts the map,
 then each (speed, torque) cell is a single model call. Cells violating any
-constraint are masked, with the first binding constraint recorded — the grey
-wall in the reference map at ≈1650 rpm is the 48 V bus voltage limit, exactly
-where the back-EMF says it should be.
+constraint are masked, with the first binding constraint recorded. The grey
+wall in the reference map near 1650 rpm is the 48 V bus voltage limit, at
+the speed the back-EMF predicts.
 
 ![Efficiency map](../images/03_efficiency_map.png)
 
 ---
 
-**Try it:** [example 03](../examples/03_annular_efficiency_map.ipynb)
-(parity demo, radial profiles, efficiency map) and
-[example 04](../examples/04_air_gap_sensitivity.ipynb) (gap error, coning,
-runout — including the Jensen sign — and magnet-arc sweeps).
+See [example 03](../examples/03_annular_efficiency_map.ipynb) for the parity
+demo, radial profiles, and efficiency map, and
+[example 04](../examples/04_air_gap_sensitivity.ipynb) for gap error,
+coning, runout (including the Jensen sign), and magnet-arc sweeps.

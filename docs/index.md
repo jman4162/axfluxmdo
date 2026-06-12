@@ -7,11 +7,11 @@ optimization of axial-flux permanent-magnet motors.**
 [![CI](https://github.com/jman4162/axfluxmdo/actions/workflows/ci.yml/badge.svg)](https://github.com/jman4162/axfluxmdo/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/jman4162/axfluxmdo/blob/main/LICENSE)
 
-`axfluxmdo` is a **reusable science layer** that sits above expert motor
-designers and high-fidelity FEA — not a replacement for either. It provides
-parametric axial-flux geometry, fast analytical physics, open-source solver
-automation, and Pareto-front / Bayesian optimization, so design tradeoffs can
-be explored systematically instead of by intuition-only iteration.
+`axfluxmdo` is a design-exploration layer for axial-flux machines. It does not
+replace expert designers or high-fidelity FEA; it supplies the fast, validated
+models around them: parametric geometry, closed-form and 2.5D physics,
+open-source solver automation, and Pareto-front and Bayesian optimization, so
+that design tradeoffs are quantified early.
 
 ![Motor 3D cutaway](images/08_motor_3d.png)
 
@@ -28,12 +28,12 @@ be explored systematically instead of by intuition-only iteration.
 
 Every layer validates against the one below it: the annular model reproduces
 the analytical model to machine precision in its limit, and the analytical
-load line is checked against open-source FEA — with the measured residuals
+load line is checked against open-source FEA. The measured residuals are
 published in [Limitations](limitations.md).
 
 ![Spinning rotor](images/08_rotation.gif)
 
-## Quick taste
+## Example
 
 ```python
 from axfluxmdo import AxialFluxMotor, OperatingPoint

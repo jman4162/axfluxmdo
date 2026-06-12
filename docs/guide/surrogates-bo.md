@@ -1,9 +1,9 @@
 # Surrogates & Bayesian optimization (Layer 5)
 
-When each evaluation is expensive — a GetDP solve, a transient FEA run, a
-dyno test — you cannot afford the ~10³ evaluations a genetic algorithm
-spends. Bayesian optimization finds comparable designs in **tens** of
-evaluations by spending compute on *deciding where to evaluate next*.
+When each evaluation is expensive (a GetDP solve, a transient FEA run, a
+dyno test), the roughly 10³ evaluations a genetic algorithm needs are not
+affordable. Bayesian optimization finds comparable designs in tens of
+evaluations by spending compute on deciding where to evaluate next.
 
 Code: [`axfluxmdo.optimize.dataset`](../api/optimize.md),
 [`surrogate`](../api/optimize.md), [`bayesopt`](../api/optimize.md),
@@ -24,11 +24,11 @@ $$
 $$
 
 where $K_{ij} = k(x_i, x_j)$ and $(\mathbf k_*)_i = k(x_i, x_*)$. The mean
-interpolates the data; the variance *grows away from it* — the honest "I
-don't know" that drives exploration.
+interpolates the data, and the variance grows away from it. That variance
+is the quantity that drives exploration.
 
-The kernel is a **Matérn-5/2 with ARD** (automatic relevance determination —
-one length scale per input dimension):
+The kernel is a Matérn-5/2 with ARD (automatic relevance determination,
+meaning one length scale per input dimension):
 
 $$
 k(x, x') = \sigma_f^2 \Big(1 + \sqrt5 d + \tfrac53 d^2\Big) e^{-\sqrt5 d},
@@ -36,9 +36,9 @@ k(x, x') = \sigma_f^2 \Big(1 + \sqrt5 d + \tfrac53 d^2\Big) e^{-\sqrt5 d},
 d^2 = \sum_j \frac{(x_j - x_j')^2}{\ell_j^2} .
 $$
 
-ARD matters here because the feature encoding mixes scales — meters,
-unitless fill factors, ordinal pole counts — and per-dimension $\ell_j$ let
-the GP learn each variable's true influence after standardization. Length
+ARD matters here because the feature encoding mixes scales (meters,
+unitless fill factors, ordinal pole counts), and per-dimension $\ell_j$ let
+the GP learn each variable's influence after standardization. Length
 scales are fit by maximizing the marginal likelihood; trustworthiness is
 judged by k-fold cross-validation (`cv_rmse`/`cv_r2`), not by the optimizer's
 convergence warnings.
@@ -63,42 +63,42 @@ $$
 \;}
 $$
 
-— two terms with clean meanings: *exploitation* (probability-weighted
-improvement of the mean) plus *exploration* (reward for uncertainty). EI is
-zero where $\sigma \to 0$: the optimizer never re-evaluates what it already
-knows. The acquisition is maximized over a seeded candidate pool (half
-uniform, half perturbations of the incumbent) — derivative-free and correct
-for the mixed continuous/integer/choice space.
+The two terms have direct interpretations: exploitation (probability-weighted
+improvement of the mean) plus exploration (reward for uncertainty). EI goes
+to zero as $\sigma \to 0$, so the optimizer does not re-evaluate points it
+already knows. The acquisition is maximized over a seeded candidate pool
+(half uniform, half perturbations of the incumbent), which is
+derivative-free and correct for the mixed continuous/integer/choice space.
 
 ## 3. The loop
 
-1. **Initial design**: a Latin hypercube over the continuous/integer box —
-   stratified sampling that guarantees one-dimensional coverage that i.i.d.
-   uniform sampling does not — plus seeded random draws for choices.
-2. Fit the GP; **soft-penalize** infeasible points (worst feasible + 10% of
-   the feasible range) rather than injecting the 10⁹ geometry penalty, which
-   would destroy the smoothness the GP depends on.
-3. Maximize EI; evaluate the winner; append to the
-   [`DesignDataset`](../api/optimize.md) (JSON-lines, versioned header —
-   every evaluation is a permanent artifact).
-4. Repeat; same seed ⇒ identical trajectory (test-pinned determinism).
+1. Initial design: a Latin hypercube over the continuous/integer box.
+   Stratified sampling guarantees one-dimensional coverage that i.i.d.
+   uniform sampling does not. Choice variables use seeded random draws.
+2. Fit the GP. Infeasible points receive a soft penalty (worst feasible
+   value plus 10% of the feasible range) rather than the 10⁹ geometry
+   penalty, which would destroy the smoothness the GP depends on.
+3. Maximize EI, evaluate the winner, and append it to the
+   [`DesignDataset`](../api/optimize.md) (JSON Lines with a versioned
+   header, so every evaluation is a permanent artifact).
+4. Repeat. The same seed produces an identical trajectory (test-pinned).
 
-The result on the reference problem: the GA's torque-density champion
-neighborhood reached in **35 evaluations vs ~1200** — and slightly exceeded,
-because EI's local perturbation pool polishes the incumbent.
+On the reference problem, BO reaches the genetic algorithm's torque-density
+optimum in 35 evaluations versus roughly 1200, and slightly exceeds it
+because the local perturbation pool polishes the incumbent.
 
 ![BO convergence](../images/07_convergence.png)
 ![Surrogate slice](../images/07_surrogate_slice.png)
 
 ## 4. Uncertainty-aware recommendation
 
-`BOStudy.recommend(k, risk_aversion=κ)` ranks **evaluated, verified-feasible**
+`BOStudy.recommend(k, risk_aversion=κ)` ranks evaluated, verified-feasible
 designs by the pessimistic score $\mu - \kappa\sigma$ (maximize sense). A
 design the surrogate is unsure about ranks below a slightly worse one with
-verified neighbors — uncertainty-aware without pretending to certify
-unevaluated space.
+verified neighbors. The ranking covers only evaluated designs; it makes no
+claim about unevaluated space.
 
-## 5. Expensive objectives (the point of all this)
+## 5. Expensive objectives
 
 Any callable can be the objective; the cheap model still supplies the
 constraints:
@@ -120,6 +120,6 @@ study = bayesian_optimize(
 
 ---
 
-**Try it:** [example 07](../examples/07_bayesian_optimization.ipynb) — the
-35-evaluation study, convergence and surrogate-slice plots, dataset
+See [example 07](../examples/07_bayesian_optimization.ipynb) for the
+35-evaluation study, convergence and surrogate-slice plots, the dataset
 round-trip, and the FEA-objective recipe.

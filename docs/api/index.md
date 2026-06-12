@@ -15,7 +15,7 @@ need an optional backend resolve lazily (PEP 562) and raise a helpful
 
 !!! note "Stable result keys"
     `AnalyticalResult.to_dict()` keys (and their aliases, e.g.
-    `torque_density` → `torque_density_nm_kg`) are a stable interface — the
+    `torque_density` → `torque_density_nm_kg`) are a stable interface. The
     optimization grammar (`"maximize_torque_density"`,
     `"winding_temp_c < 140"`) parses against them.
 

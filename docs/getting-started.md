@@ -15,7 +15,7 @@ Python ≥ 3.10. The core install depends only on numpy and matplotlib.
     The FEA pipeline drives [GetDP](https://getdp.info) as an external
     executable. Install it via the [ONELAB bundle](https://onelab.info) or a
     standalone build, and either put `getdp` on your `PATH` or set
-    `AXFLUXMDO_GETDP=/path/to/getdp`. Everything else works without it —
+    `AXFLUXMDO_GETDP=/path/to/getdp`. Everything else works without it;
     solver-dependent tests and examples skip or fall back to committed golden
     results.
 
@@ -74,13 +74,13 @@ AnalyticalResult
 
 Key ideas visible already:
 
-- **The motor is a frozen dataclass.** Variants are made with
-  `dataclasses.replace(motor, air_gap=0.001)` — the same mechanism sweeps and
+- The motor is a frozen dataclass. Variants are made with
+  `dataclasses.replace(motor, air_gap=0.001)`, the same mechanism sweeps and
   optimizers use, so nothing is ever mutated.
-- **Every result carries its constraint margins.** `result.feasible` is the
+- Every result carries its constraint margins. `result.feasible` is the
   single boolean the optimizers honor; each named constraint reports a
   normalized margin.
-- **Results are flat dictionaries too.** `result.to_dict()` keys
+- Results are flat dictionaries too. `result.to_dict()` keys
   (`torque_nm`, `efficiency`, `winding_temp_c`, ...) are a stable interface
   with short aliases (`torque_density` → `torque_density_nm_kg`) used
   throughout the optimization grammar.
@@ -127,6 +127,6 @@ objectives.
 - The [User Guide](guide/analytical-model.md) derives the physics each layer
   implements, with the equations and their code locations.
 - The [Examples](examples/01_basic_axial_flux_motor.ipynb) are executed
-  notebooks — every figure on this site regenerates from them.
-- [Limitations](limitations.md) states plainly what the fast models leave
-  out, with FEA-measured error bars.
+  notebooks; every figure on this site regenerates from them.
+- [Limitations](limitations.md) states what the fast models leave out, with
+  FEA-measured error bars.

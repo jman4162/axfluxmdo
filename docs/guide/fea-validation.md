@@ -2,8 +2,8 @@
 
 The package never reimplements FEM. It generates geometry and meshes with
 **Gmsh**, drives **GetDP** (open-source magnetostatics) on them, and compares
-the result against its own analytical layer — publishing the residuals
-instead of hiding them.
+the result against its own analytical layer. The measured residuals are part
+of the documentation.
 
 Code: [`axfluxmdo.solvers.gmsh_export`](../api/solvers.md),
 [`getdp_runner`](../api/solvers.md), [`results_parser`](../api/solvers.md),
@@ -19,7 +19,7 @@ radius $r_m$ turns one pole pair into a 2D planar problem: $x$ is the
 circumferential coordinate over $2\tau_p$, $y$ is axial, and the model is
 periodic in $x$. The approximation is good when the radial build
 $(r_o - r_i)$ is several times the pole pitch and field quantities vary
-slowly with radius — exactly the regime where the
+slowly with radius. This is the same regime where the
 [annular model](annular-model.md) treats radius as a parameter, not a field
 variable. Radial end effects are outside its scope.
 
@@ -42,16 +42,16 @@ $$
 \;=\; \int_{\Omega_m} \nu\, \mathbf B_r \cdot (\nabla \times w\hat z)\; d\Omega .
 $$
 
-Crucially, the magnet constitutive law in the template,
-$\mathbf B = \mu_0\mu_r \mathbf H + \mathbf B_r$, is the **identical recoil
-line** behind the analytical load line — so any residual between FEA and the
-load line is *geometry* (leakage, fringing, finite iron $\mu$), never a
-material-model discrepancy.
+The magnet constitutive law in the template,
+$\mathbf B = \mu_0\mu_r \mathbf H + \mathbf B_r$, is the identical recoil
+line behind the analytical load line. Any residual between FEA and the load
+line is therefore geometric (leakage, fringing, finite iron $\mu$) rather
+than a material-model discrepancy.
 
 Boundary conditions: $A_z = 0$ on the outer iron backs (flux confined),
 periodic linking of the left/right edges (which requires the mesh nodes to
-match — the exporter enforces matched periodic meshing, and a conformality
-test guards against cracked interfaces after one bit us in development).
+match; the exporter enforces matched periodic meshing, and a conformality
+test guards against cracked interfaces).
 
 ## 3. What the FEA measured
 
@@ -59,13 +59,13 @@ test guards against cracked interfaces after one bit us in development).
 
 For the reference motor (slotless face, identical materials):
 
-- **under-magnet mean:** −11.2% vs the load line $B_g$,
-- **fundamental:** −6.8% vs $B_1$.
+- under-magnet mean: −11.2% vs the load line $B_g$,
+- fundamental: −6.8% vs $B_1$.
 
-The flat top sits just below the analytical line; the *shoulders* — flux
-spreading circumferentially as it crosses the gap, and leaking pole-to-pole
-between magnets — are what the 1D circuit cannot represent. The load line is
-an upper bound, now with measured error bars.
+The flat top sits just below the analytical line. The shoulders, where flux
+spreads circumferentially as it crosses the gap and leaks pole-to-pole
+between magnets, are what the 1D circuit cannot represent. The load line is
+an upper bound, and the error bars are now measured.
 
 ## 4. Carter factor: theory vs measurement
 
@@ -78,10 +78,10 @@ k_C = \frac{\tau_s}{\tau_s - \gamma g},
 $$
 
 with slot pitch $\tau_s$ and opening width $w$. For this stator
-($w/g \approx 2.5$) it predicts $k_C \approx 1.2$ — but the **measured**
-value is $k_C = 1.44$, because the classical formula assumes shallow,
-semi-closed slots while this machine has fully open slots as deep as the
-winding window. Measuring beats assuming.
+($w/g \approx 2.5$) it predicts $k_C \approx 1.2$. The measured value is
+$k_C = 1.44$, because the classical formula assumes shallow, semi-closed
+slots while this machine has fully open slots as deep as the winding
+window.
 
 The measurement itself cancels the fringing bias by using the
 slotless/slotted **ratio**:
@@ -102,6 +102,6 @@ CI job re-runs the live pipeline (pinned GetDP version) on every push.
 
 ---
 
-**Try it:** [example 06](../examples/06_gmsh_export.ipynb) — mesh export,
-the live-or-golden solve, the residual report, and the Carter-factor
-feedback loop.
+See [example 06](../examples/06_gmsh_export.ipynb) for mesh export, the
+live-or-golden solve, the residual report, and the Carter-factor feedback
+loop.

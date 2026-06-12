@@ -16,53 +16,55 @@ Code: [`axfluxmdo.optimize.problem`](../api/optimize.md),
 
 `DesignProblem` is the single parsing layer every backend shares:
 
-- **Variables**: `{"outer_radius": (0.05, 0.12)}` — a 2-tuple is a continuous
+- Variables: `{"outer_radius": (0.05, 0.12)}`. A 2-tuple is a continuous
   bound (integer bound if the motor field is an int); a list is a discrete
   choice set (`"pole_pairs": [8, 10, ...]`). Dotted paths reach nested
   fields: `"tolerances.runout_m"`.
-- **Objectives**: `"maximize_torque_density"` / `"minimize_mass"` — the
+- Objectives: `"maximize_torque_density"` or `"minimize_mass"`. The
   suffix resolves through the alias map to a stable result key.
-- **Constraints**: `"winding_temp_c < 140"` — parsed to the standard
+- Constraints: `"winding_temp_c < 140"`, parsed to the standard
   $g(x) \le 0$ convention. The models' built-in constraint records are
   enforced *in addition* by default, so optimizer output is always
   `result.feasible`.
 
 Design vectors that violate geometric validity (e.g. $r_i \ge r_o$) are
-penalized with large finite values, never raised — genetic algorithms bury
-them via constrained domination.
+penalized with large finite values rather than raised; genetic algorithms
+bury them through constrained domination.
 
 ## 2. Pareto optimality, briefly
 
-A design $x$ **dominates** $y$ if it is no worse in every objective and
-strictly better in at least one. The **Pareto front** is the set of
-non-dominated feasible designs — the only designs worth arguing about,
-because anything off the front is beaten outright by something on it.
+A design $x$ dominates $y$ if it is no worse in every objective and
+strictly better in at least one. The Pareto front is the set of
+non-dominated feasible designs. Any design off the front is beaten in every
+objective by some design on it, so the front is the complete answer to a
+multi-objective sizing question.
 
 With mixed Real/Integer/Choice variables, the package uses pymoo's
 mixed-variable GA with rank-and-crowding survival (the NSGA-II selection
 applied to a mixed search space). Rounding a continuous GA onto discrete
-choices is deliberately avoided — it breaks duplicate elimination and choice
-semantics.
+choices is deliberately avoided because it breaks duplicate elimination and
+choice semantics.
 
 Sign convention: optimizers work in *minimize space* internally
 (maximize objectives are negated exactly once, at the boundary); every
-user-facing study object reports **human-sign** values. This invariant is
+user-facing study object reports values with their natural sign. This invariant is
 shared with the [BO layer](surrogates-bo.md).
 
 ![Pareto front](../images/05_pareto_front.png)
 
 The three-objective reference study renders as x/y position plus color. The
-spread below the upper envelope is the third objective (mass) at work — all
-points are 3D-non-dominated. The torque-density champion and the efficiency
-champion are different machines; *never optimize torque density alone*.
+spread below the upper envelope comes from the third objective (mass); all
+points are non-dominated in three dimensions. The torque-density optimum and
+the efficiency optimum are different machines, which is the argument against
+optimizing torque density alone.
 
 ## 3. One-at-a-time sensitivities
 
 `compute_sensitivities` perturbs each variable ±5% (clamped to bounds;
-discrete variables step one option) and records the output swing — the
-classic tornado chart. It is a **local, one-factor** analysis: cheap,
-interpretable, and blind to interactions; use it to rank levers around a
-chosen design, not to certify global behavior.
+discrete variables step one option) and records the output swing, plotted
+as a tornado chart. It is a local, one-factor analysis: cheap and interpretable, but blind to
+interactions. Use it to rank design levers around a chosen design, not to
+certify global behavior.
 
 ![Tornado chart](../images/05_tornado.png)
 
@@ -72,12 +74,12 @@ chosen design, not to certify global behavior.
 finite-difference partials: continuous design variables in, requested result
 keys and constraint violations out. The shipped demo runs SLSQP on
 torque density with constraints wired as `g ≤ 0`. Discrete variables are
-frozen at their baseline — gradient drivers cannot move them; that is the
-GA's job. The component is the doorway to larger coupled MDO groups
+frozen at their baseline, since gradient drivers cannot move them; discrete
+search is the GA's job. The component is the doorway to larger coupled MDO groups
 (drivetrain, inverter, structure) per the OpenMDAO philosophy.
 
 ---
 
-**Try it:** [example 05](../examples/05_torque_density_optimization.ipynb) —
-the full three-objective study, design-pick walkthrough, tornado chart, and
-SLSQP refinement.
+See [example 05](../examples/05_torque_density_optimization.ipynb) for the
+full three-objective study, design selection, tornado chart, and SLSQP
+refinement.

@@ -27,3 +27,6 @@ docs/examples/
 # OS
 .DS_Store
 .venv.nosync/
+
+# mkdocs-jupyter cache
+.cache/
