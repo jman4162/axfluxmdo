@@ -3,6 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from axfluxmdo.geometry.axial_flux import AxialFluxMotor
+from axfluxmdo.geometry.tolerances import GapImperfections
 from axfluxmdo.operating_point import OperatingPoint
 
 try:
@@ -10,4 +11,4 @@ try:
 except PackageNotFoundError:  # pragma: no cover - package not installed
     __version__ = "0.0.0+unknown"
 
-__all__ = ["AxialFluxMotor", "OperatingPoint", "__version__"]
+__all__ = ["AxialFluxMotor", "GapImperfections", "OperatingPoint", "__version__"]

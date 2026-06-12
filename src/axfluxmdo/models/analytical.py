@@ -52,6 +52,57 @@ MAGNET_TEMP_RISE_C = 40.0  # Phase-1 assumption: magnets run this far above ambi
 CORE_LOSS_TO_WINDING_FRACTION = 0.5  # fraction of core loss heating the winding node
 
 
+def build_constraints(
+    motor: AxialFluxMotor,
+    op: OperatingPoint,
+    limits: Limits,
+    *,
+    winding_temp_c: float,
+    f_e_hz: float,
+    current_density_a_mm2: float,
+    back_emf_v_rms: float,
+    phase_resistance_ohm: float,
+    b_yoke_t: float,
+    magnet_temp_c: float,
+) -> list[ConstraintRecord]:
+    """The Phase-1 constraint set, shared by all fidelity layers.
+
+    ``None`` limits resolve from the motor/operating point (see ``Limits``).
+    Voltage: V_required = sqrt(3)*(E + I*R) vs V_dc/sqrt(2) (SVPWM line-line
+    fundamental; inductive drop neglected, documented Phase-1 simplification).
+    """
+    v_limit = (
+        limits.max_line_voltage_v
+        if limits.max_line_voltage_v is not None
+        else op.dc_bus_voltage / math.sqrt(2.0)
+    )
+    v_required = (
+        math.sqrt(3.0) * (back_emf_v_rms + op.current_rms * phase_resistance_ohm)
+        if math.isfinite(phase_resistance_ohm)
+        else math.inf
+    )
+    b_limit = (
+        limits.max_core_flux_density_t
+        if limits.max_core_flux_density_t is not None
+        else motor.steel.b_sat_t
+    )
+    magnet_temp_limit = (
+        limits.max_magnet_temp_c
+        if limits.max_magnet_temp_c is not None
+        else motor.magnet.max_operating_temp_c
+    )
+    return [
+        make_upper_bound("winding_temp_c", winding_temp_c, limits.max_winding_temp_c),
+        make_upper_bound("electrical_frequency_hz", f_e_hz, limits.max_electrical_freq_hz),
+        make_upper_bound(
+            "current_density_a_mm2", current_density_a_mm2, limits.max_current_density_a_mm2
+        ),
+        make_upper_bound("line_voltage_v", v_required, v_limit),
+        make_upper_bound("core_flux_density_t", b_yoke_t, b_limit),
+        make_upper_bound("magnet_temp_c", magnet_temp_c, magnet_temp_limit),
+    ]
+
+
 @dataclass(frozen=True)
 class AnalyticalResult:
     """Evaluated performance of one motor at one operating point (SI + named units)."""
@@ -190,37 +241,18 @@ class AnalyticalModel:
 
         # 8. Constraints
         current_density = op.current_rms / (motor.conductor_area * 1e6)  # A/mm^2
-        lim = self.limits
-        v_limit = (
-            lim.max_line_voltage_v
-            if lim.max_line_voltage_v is not None
-            else op.dc_bus_voltage / math.sqrt(2.0)  # SVPWM line-line fundamental limit
+        constraints = build_constraints(
+            motor,
+            op,
+            self.limits,
+            winding_temp_c=winding_temp,
+            f_e_hz=f_e,
+            current_density_a_mm2=current_density,
+            back_emf_v_rms=back_emf_rms,
+            phase_resistance_ohm=r_phase,
+            b_yoke_t=b_yoke,
+            magnet_temp_c=magnet_temp_c,
         )
-        v_required = (
-            math.sqrt(3.0) * (back_emf_rms + op.current_rms * r_phase)
-            if math.isfinite(r_phase)
-            else math.inf
-        )
-        b_limit = (
-            lim.max_core_flux_density_t
-            if lim.max_core_flux_density_t is not None
-            else motor.steel.b_sat_t
-        )
-        magnet_temp_limit = (
-            lim.max_magnet_temp_c
-            if lim.max_magnet_temp_c is not None
-            else motor.magnet.max_operating_temp_c
-        )
-        constraints = [
-            make_upper_bound("winding_temp_c", winding_temp, lim.max_winding_temp_c),
-            make_upper_bound("electrical_frequency_hz", f_e, lim.max_electrical_freq_hz),
-            make_upper_bound(
-                "current_density_a_mm2", current_density, lim.max_current_density_a_mm2
-            ),
-            make_upper_bound("line_voltage_v", v_required, v_limit),
-            make_upper_bound("core_flux_density_t", b_yoke, b_limit),
-            make_upper_bound("magnet_temp_c", magnet_temp_c, magnet_temp_limit),
-        ]
 
         return AnalyticalResult(
             torque_nm=torque,
