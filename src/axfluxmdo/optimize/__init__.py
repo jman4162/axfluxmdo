@@ -6,6 +6,7 @@ lazily inside the call, and the OpenMDAO names resolve through PEP 562
 module ``__getattr__``.
 """
 
+from axfluxmdo.optimize.dataset import DesignDataset
 from axfluxmdo.optimize.problem import (
     ALIASES,
     DesignProblem,
@@ -24,13 +25,18 @@ from axfluxmdo.optimize.sensitivity import (
 
 __all__ = [
     "ALIASES",
+    "BOStudy",
+    "DesignDataset",
     "DesignProblem",
+    "GPSurrogate",
     "MotorComponent",
+    "RandomForestSurrogate",
     "Objective",
     "ParetoStudy",
     "SensitivityEntry",
     "SensitivityResult",
     "UserConstraint",
+    "bayesian_optimize",
     "build_motor_group",
     "compute_sensitivities",
     "optimize_pareto",
@@ -41,6 +47,8 @@ __all__ = [
 ]
 
 _OPENMDAO_NAMES = {"MotorComponent", "build_motor_group", "run_openmdao_demo"}
+_SURROGATE_NAMES = {"GPSurrogate", "RandomForestSurrogate", "Surrogate"}
+_BAYESOPT_NAMES = {"BOStudy", "bayesian_optimize"}
 
 
 def __getattr__(name: str):
@@ -48,4 +56,12 @@ def __getattr__(name: str):
         from axfluxmdo.optimize import openmdao_components
 
         return getattr(openmdao_components, name)
+    if name in _SURROGATE_NAMES:
+        from axfluxmdo.optimize import surrogate
+
+        return getattr(surrogate, name)
+    if name in _BAYESOPT_NAMES:
+        from axfluxmdo.optimize import bayesopt
+
+        return getattr(bayesopt, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
