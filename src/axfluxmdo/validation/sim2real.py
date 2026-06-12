@@ -72,9 +72,7 @@ def compare_open_circuit(
             f"{solution.magnet_temp_c} °C — residuals will mix temperature effects",
             stacklevel=2,
         )
-    b_g = airgap_flux_density(
-        motor.magnet, motor.magnet_thickness, motor.air_gap, magnet_temp_c
-    )
+    b_g = airgap_flux_density(motor.magnet, motor.magnet_thickness, motor.air_gap, magnet_temp_c)
     b1 = (4.0 / math.pi) * b_g * math.sin(motor.magnet_arc_ratio * math.pi / 2.0)
     return OpenCircuitComparison(
         magnet_temp_c=magnet_temp_c,

@@ -15,7 +15,9 @@ ALPHA = 0.85
 
 def make_solution(by_func, n=721, slotted=False, include_duplicate_endpoint=True):
     span = 2 * TAU
-    x = np.linspace(0.0, span, n if include_duplicate_endpoint else n - 1, endpoint=include_duplicate_endpoint)
+    x = np.linspace(
+        0.0, span, n if include_duplicate_endpoint else n - 1, endpoint=include_duplicate_endpoint
+    )
     return GapFieldSolution(
         x_m=x,
         by_t=by_func(x),
@@ -112,7 +114,7 @@ class TestCarterFactor:
         b_slotted = airgap_flux_density(
             motor.magnet, motor.magnet_thickness, motor.air_gap, 65.0, carter_factor=k_c_true
         )
-        flat = lambda b: (lambda x: np.full_like(x, b))  # noqa: E731
+        flat = lambda b: lambda x: np.full_like(x, b)  # noqa: E731
         # mean under magnet of a constant field is the constant itself
         sl = make_solution(flat(b_slotless), slotted=False)
         st = make_solution(flat(b_slotted), slotted=True)
