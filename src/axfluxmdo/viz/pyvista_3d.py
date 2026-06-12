@@ -209,8 +209,14 @@ def _can_render() -> bool:
     On Linux without a display, try pyvista's xvfb helper first.
     """
     if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
+        # pyvista.start_xvfb() was removed in pyvista 0.48; without it (or
+        # without a display at all) rendering is unavailable here — run the
+        # example under `xvfb-run` instead, as CI does.
+        start_xvfb = getattr(pv, "start_xvfb", None)
+        if start_xvfb is None:
+            return False
         try:
-            pv.start_xvfb()
+            start_xvfb()
         except OSError:
             return False
     code = (
