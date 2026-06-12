@@ -17,15 +17,19 @@
 # How do torque, back-EMF, electrical frequency, core loss, efficiency, and
 # winding temperature change with pole-pair count?
 #
-# In the Layer-1 model, torque at fixed air-gap field and electrical loading is
-# *independent* of pole-pair count (shear stress doesn't depend on `p`) — the
+# In the Layer-1 model, torque at fixed air-gap field and electrical loading
+# is independent of pole-pair count: flux per pole falls as 1/p while the
+# pole count rises as p, and the two cancel in the torque expression. The
 # tradeoff lives elsewhere:
 #
-# - **Low `p`** needs a thick stator yoke: each pole's flux return scales with
+# - Low `p` needs a thick stator yoke. Each pole's flux return scales with
 #   the pole pitch, so a fixed yoke saturates at low pole counts.
-# - **High `p`** raises electrical frequency linearly — core loss per tesla,
-#   inverter switching burden, and ripple all grow — while shorter end turns
-#   reduce copper loss.
+# - High `p` raises electrical frequency linearly, which raises inverter
+#   switching burden and ripple, while shorter end turns reduce copper loss.
+#
+# The second sweep at the end of this notebook shows where the familiar
+# "more poles is better" intuition actually comes from: resizing the iron
+# with p raises torque density several-fold while torque stays constant.
 
 # %%
 from pathlib import Path
@@ -100,3 +104,47 @@ for p, r in zip(sweep.values, sweep.results, strict=True):
     f_margin = by_name["electrical_frequency_hz"].margin
     b_yoke = by_name["core_flux_density_t"].value
     print(f"p={p:3d}  f_e margin {f_margin:+.1%}  B_yoke={b_yoke:.2f} T  feasible={r.feasible}")
+
+# %% [markdown]
+# ## Where the "more poles = more torque" intuition comes from
+#
+# Torque is flat above because the sweep holds the geometry fixed. The
+# benefit of high pole counts is torque *density*: each pole's flux return
+# scales with the pole pitch, so the required yoke thickness scales as 1/p.
+# Resizing the rotor back iron and stator core accordingly (holding yoke
+# flux density constant) leaves torque unchanged but removes iron mass.
+
+# %%
+import dataclasses
+
+from axfluxmdo.models import AnalyticalModel
+
+model = AnalyticalModel()
+P_REF = motor.pole_pairs  # yokes sized for p=14 in the reference design
+
+print("fixed geometry            vs   yokes resized as 1/p (constant B_yoke)")
+for p in range(4, 21, 2):
+    fixed = model.evaluate(dataclasses.replace(motor, pole_pairs=p), op)
+    scale = P_REF / p
+    scaled_motor = dataclasses.replace(
+        motor,
+        pole_pairs=p,
+        stator_core_thickness=motor.stator_core_thickness * scale,
+        back_iron_thickness=motor.back_iron_thickness * scale,
+    )
+    scaled = model.evaluate(scaled_motor, op)
+    print(
+        f"p={p:3d}  T={fixed.torque_nm:5.2f} N·m  {fixed.torque_density_nm_kg:5.2f} N·m/kg"
+        f"   |   T={scaled.torque_nm:5.2f} N·m  {scaled.torque_density_nm_kg:5.2f} N·m/kg"
+        f"  (mass {scaled.mass_kg:5.2f} kg)"
+    )
+
+# %% [markdown]
+# Torque is identical in both columns at every pole count. In the fixed
+# sweep, torque density rises only ~13% (shorter end turns shrink the copper
+# mass). In the design-scaled sweep it rises ~3.4x, because the iron shrinks
+# with p. Thinner yokes at constant air-gap shear, not extra torque, are why
+# optimized high-pole machines win in robotics joints and direct-drive
+# applications. The
+# [pole-pair explainer](https://jman4162.github.io/axfluxmdo/guide/analytical-model/#4-pole-pairs-and-torque-a-common-misconception)
+# in the docs works through the algebra.
