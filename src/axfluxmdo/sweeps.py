@@ -15,7 +15,22 @@ import numpy as np
 
 from axfluxmdo.geometry.axial_flux import AxialFluxMotor
 from axfluxmdo.models.analytical import AnalyticalModel, AnalyticalResult
+from axfluxmdo.models.base import Model
 from axfluxmdo.operating_point import OperatingPoint
+
+
+def _replace_field(motor: AxialFluxMotor, name: str, value) -> AxialFluxMotor:
+    """``dataclasses.replace`` supporting one level of dotted paths.
+
+    ``"tolerances.runout_m"`` replaces the field on the nested frozen
+    dataclass and re-attaches it — the mechanism for sweeping manufacturing
+    imperfections.
+    """
+    if "." not in name:
+        return dataclasses.replace(motor, **{name: value})
+    outer, inner = name.split(".", 1)
+    nested = dataclasses.replace(getattr(motor, outer), **{inner: value})
+    return dataclasses.replace(motor, **{outer: nested})
 
 
 @dataclass
@@ -69,11 +84,15 @@ def sweep_parameter(
     op: OperatingPoint,
     name: str,
     values: Sequence,
-    model: AnalyticalModel | None = None,
+    model: Model | None = None,
 ) -> SweepResult:
-    """Evaluate the motor across values of one design field (e.g. ``air_gap``)."""
+    """Evaluate the motor across values of one design field.
+
+    ``name`` may be a dotted path into a nested dataclass field, e.g.
+    ``"tolerances.runout_m"`` (use with ``model=AnnularModel()``).
+    """
     model = model or AnalyticalModel()
-    results = [model.evaluate(dataclasses.replace(motor, **{name: v}), op) for v in values]
+    results = [model.evaluate(_replace_field(motor, name, v), op) for v in values]
     return SweepResult(parameter=name, values=list(values), results=results)
 
 
@@ -81,7 +100,7 @@ def sweep_pole_pairs(
     motor: AxialFluxMotor,
     op: OperatingPoint,
     pole_pairs: Sequence[int] = tuple(range(4, 24, 2)),
-    model: AnalyticalModel | None = None,
+    model: Model | None = None,
 ) -> SweepResult:
     """The SPEC MVP question #1: performance tradeoffs across pole-pair count."""
     return sweep_parameter(motor, op, "pole_pairs", list(pole_pairs), model)

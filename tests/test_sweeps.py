@@ -43,3 +43,32 @@ class TestSweepPolePairs:
         sweep = sweep_pole_pairs(reference_motor, reference_op, [8, 12])
         with pytest.raises(KeyError):
             sweep.to_arrays("not_a_field")
+
+
+class TestDottedPathSweeps:
+    def test_runout_sweep_with_annular_model(self, reference_motor, reference_op):
+        from axfluxmdo.models import AnnularModel
+        from axfluxmdo.sweeps import sweep_parameter
+
+        sweep = sweep_parameter(
+            reference_motor,
+            reference_op,
+            "tolerances.runout_m",
+            [0.0, 1e-4, 2e-4],
+            model=AnnularModel(),
+        )
+        assert sweep.parameter == "tolerances.runout_m"
+        ripples = [r.torque_ripple_proxy for r in sweep.results]
+        assert ripples[0] == 0.0
+        assert ripples[1] < ripples[2]
+        # input motor unmutated
+        assert reference_motor.tolerances.runout_m == 0.0
+
+    def test_plain_field_still_works_with_annular_model(self, reference_motor, reference_op):
+        from axfluxmdo.models import AnnularModel
+        from axfluxmdo.sweeps import sweep_parameter
+
+        sweep = sweep_parameter(
+            reference_motor, reference_op, "air_gap", [0.0006, 0.001], model=AnnularModel()
+        )
+        assert sweep.results[0].torque_nm > sweep.results[1].torque_nm
