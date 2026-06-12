@@ -200,6 +200,42 @@ geometry that the 1D circuit cannot see. Measured on the reference motor
 A 3D annular-sector mesh export (`export_3d_sector`) is included for downstream
 tooling; Elmer integration is deferred.
 
+## Bayesian optimization for expensive evaluations (Phase 5)
+
+```python
+from axfluxmdo.optimize import bayesian_optimize
+
+study = bayesian_optimize(
+    motor,
+    op,
+    variables={
+        "outer_radius": (0.05, 0.12),
+        "air_gap": (0.0005, 0.0015),
+        "fill_factor": (0.30, 0.60),
+        "pole_pairs": [8, 10, 12, 14, 16, 18, 20],
+    },
+    objective="maximize_torque_density",
+    constraints=["winding_temp_c < 140", "electrical_frequency_hz < 1000"],
+    n_initial=10,
+    n_iterations=25,
+    seed=42,
+)
+print(study.summary())
+print(study.recommend(k=3))   # uncertainty-aware: ranked by surrogate mean − σ
+```
+
+A Gaussian-process surrogate (ARD Matérn, scikit-learn) plus expected-improvement
+acquisition finds the example-05 torque-density champion's neighborhood in **35
+evaluations instead of the GA's ~1200** — the regime that matters when each evaluation
+is a FEA solve or a dyno run. An `expensive_fn` hook plugs any costly objective into
+the loop (e.g. a live GetDP solve from Phase 4); every evaluation lands in a
+persistable `DesignDataset` (JSON Lines), and recommendations are ranked by the
+surrogate's pessimistic estimate so unverified corners of the space don't win on
+optimism.
+
+![BO convergence](docs/images/07_convergence.png)
+![Surrogate slice](docs/images/07_surrogate_slice.png)
+
 ## What's in the model (Phase 1)
 
 - **Magnetics:** magnet load-line air-gap flux density with temperature-derated
@@ -226,13 +262,15 @@ ruff check . && ruff format --check .
 
 ## Roadmap
 
+All five SPEC phases are shipped.
+
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
 | 1 | Analytical workbench: parametric motor, torque/EMF/losses/thermal RC, constraints, pole-pair sweep, geometry viz | ✅ |
 | 2 | 2.5D annular slice model: radius-dependent flux/loading/losses, air-gap & runout sensitivity, efficiency maps | ✅ |
 | 3 | MDO: OpenMDAO components, pymoo Pareto optimization, sensitivity analysis | ✅ |
 | 4 | External solver integration: Gmsh export, GetDP pipeline, sim-to-analytical residuals (Elmer deferred) | ✅ |
-| 5 | Surrogates & Bayesian optimization for expensive design loops | — |
+| 5 | Surrogates & Bayesian optimization for expensive design loops | ✅ |
 
 ## Non-goals
 

@@ -35,6 +35,7 @@ jobs:
           python examples/02_pole_pair_tradeoff.py
           python examples/05_torque_density_optimization.py
           python examples/06_gmsh_export.py
+          python examples/07_bayesian_optimization.py
 
   # Advisory: exercises the live GetDP pipeline and uploads the gap-field
   # tables (used as the source of the committed golden data). External binary

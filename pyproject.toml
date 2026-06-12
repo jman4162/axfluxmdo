@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "axfluxmdo"
-version = "0.4.0"
+version = "0.5.0"
 description = "Parametric modeling, analysis, and multidisciplinary design optimization of axial-flux permanent-magnet motors"
 readme = "README.md"
 license = "MIT"

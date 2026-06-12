@@ -4,7 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phases 1–4 are implemented: the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`), and external solver hooks (Gmsh 2D-unrolled/3D-sector export, GetDP open-circuit magnetostatics pipeline, `validation/sim2real.py` residuals; Elmer deferred by user decision). Phase 5 (surrogates/BO) is not started. `SPEC.md` remains the source of truth for scope, architecture, equations, and roadmap.
+ALL FIVE SPEC phases are implemented: the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`), external solver hooks (Gmsh 2D-unrolled/3D-sector export, GetDP open-circuit magnetostatics pipeline, `validation/sim2real.py` residuals; Elmer deferred by user decision), and surrogates + Bayesian optimization (`DesignDataset`, `GPSurrogate`/`RandomForestSurrogate`, `bayesian_optimize`/`BOStudy`). `SPEC.md` remains the historical design doc; where decisions superseded it (Elmer deferral; **surrogate backend = scikit-learn GP + hand-rolled EI**, not the SPEC's "scikit-optimize first, BoTorch later" — both remain future alternative backends), this file wins.
+
+Surrogate/BO invariants:
+- sklearn/scipy live in `[opt]` and are NEVER imported by `import axfluxmdo` or `import axfluxmdo.optimize` (PEP 562, test-enforced in `tests/test_import_hygiene.py`). `optimize/dataset.py` is numpy-only and eagerly exported.
+- BO determinism-by-seed is test-pinned (same seed → identical trajectory).
+- `DesignDataset` JSONL header `axfluxmdo-dataset-v1` is a stable on-disk format.
+- `BOStudy` reports human-sign objective values (extends the `ParetoStudy.F` invariant); minimize-space lives only inside `bayesopt.py`.
+- Surrogate training uses SOFT penalties for infeasible points (worst feasible + 10% of range) — never feed `PENALTY_OBJECTIVE=1e9` into the GP.
+- GP kernel must keep per-dimension (ARD) length scales — the ordinal feature encoding mixes scales.
 
 Solver-layer invariants:
 - `import axfluxmdo.solvers` never imports gmsh (test-enforced; PEP 562 pattern). Every gmsh session goes through `_gmsh_session` (try/finally finalize); paths absolute; .msh files written as MSH 2.2 (GetDP compatibility).
