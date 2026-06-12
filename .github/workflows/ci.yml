@@ -56,8 +56,6 @@ jobs:
           curl -fsSLo getdp.tgz https://getdp.info/bin/Linux/getdp-3.5.0-Linux64c.tgz
           tar xzf getdp.tgz
           echo "AXFLUXMDO_GETDP=$PWD/getdp-3.5.0-Linux64/bin/getdp" >> "$GITHUB_ENV"
-      - name: Live solver tests
-        run: pytest -q tests/test_getdp_runner.py tests/test_sim2real.py
       - name: Generate gap-field tables
         env:
           MPLBACKEND: Agg
@@ -79,11 +77,14 @@ jobs:
               print(name, "mean_b:", sol.mean_b_t, "b1:", sol.fundamental_b1_t)
               (wd / "gap_field.dat").rename(out / f"06_gap_field_{name}.dat")
           EOF
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gap-field-tables
+          path: gap_field_artifacts/06_gap_field_*.dat
+      - name: Live solver tests
+        run: pytest -q tests/test_getdp_runner.py tests/test_sim2real.py
       - name: Run example 06 (live branch)
         env:
           MPLBACKEND: Agg
         run: python examples/06_gmsh_export.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gap-field-tables
-          path: gap_field_artifacts/06_gap_field_*.dat
