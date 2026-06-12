@@ -17,10 +17,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: System libraries for the gmsh wheel
-        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libxrender1 libxcursor1 libxft2 libxinerama1
+      - name: System libraries for the gmsh and vtk wheels
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libxrender1 libxcursor1 libxft2 libxinerama1 xvfb
       - name: Install
-        run: pip install -e ".[dev,opt,fea]"
+        run: pip install -e ".[dev,opt,fea,viz3d]"
       - name: Lint
         run: |
           ruff check .
@@ -36,6 +36,7 @@ jobs:
           python examples/05_torque_density_optimization.py
           python examples/06_gmsh_export.py
           python examples/07_bayesian_optimization.py
+          xvfb-run -a python examples/08_3d_animation.py
 
   # Advisory: exercises the live GetDP pipeline and uploads the gap-field
   # tables (used as the source of the committed golden data). External binary

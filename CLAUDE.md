@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-ALL FIVE SPEC phases are implemented: the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`), external solver hooks (Gmsh 2D-unrolled/3D-sector export, GetDP open-circuit magnetostatics pipeline, `validation/sim2real.py` residuals; Elmer deferred by user decision), and surrogates + Bayesian optimization (`DesignDataset`, `GPSurrogate`/`RandomForestSurrogate`, `bayesian_optimize`/`BOStudy`). `SPEC.md` remains the historical design doc; where decisions superseded it (Elmer deferral; **surrogate backend = scikit-learn GP + hand-rolled EI**, not the SPEC's "scikit-optimize first, BoTorch later" — both remain future alternative backends), this file wins.
+ALL FIVE SPEC phases are implemented, plus PyVista 3D visualization (v0.6.0, the SPEC's viz/pyvista_3d.py slot): the analytical workbench (`AnalyticalModel`), the 2.5D annular slice model (`AnnularModel` with `GapImperfections`, ripple/axial-force metrics, `compute_efficiency_map`), the MDO layer (`optimize_pareto` via pymoo, `DesignProblem`, `compute_sensitivities`, OpenMDAO `MotorComponent`), external solver hooks (Gmsh 2D-unrolled/3D-sector export, GetDP open-circuit magnetostatics pipeline, `validation/sim2real.py` residuals; Elmer deferred by user decision), and surrogates + Bayesian optimization (`DesignDataset`, `GPSurrogate`/`RandomForestSurrogate`, `bayesian_optimize`/`BOStudy`). `SPEC.md` remains the historical design doc; where decisions superseded it (Elmer deferral; **surrogate backend = scikit-learn GP + hand-rolled EI**, not the SPEC's "scikit-optimize first, BoTorch later" — both remain future alternative backends), this file wins.
 
 Surrogate/BO invariants:
 - sklearn/scipy live in `[opt]` and are NEVER imported by `import axfluxmdo` or `import axfluxmdo.optimize` (PEP 562, test-enforced in `tests/test_import_hygiene.py`). `optimize/dataset.py` is numpy-only and eagerly exported.
@@ -13,6 +13,12 @@ Surrogate/BO invariants:
 - `BOStudy` reports human-sign objective values (extends the `ParetoStudy.F` invariant); minimize-space lives only inside `bayesopt.py`.
 - Surrogate training uses SOFT penalties for infeasible points (worst feasible + 10% of range) — never feed `PENALTY_OBJECTIVE=1e9` into the GP.
 - GP kernel must keep per-dimension (ARD) length scales — the ordinal feature encoding mixes scales.
+
+3D-viz invariants:
+- pyvista/imageio live in the `[viz3d]` extra; `import axfluxmdo.viz` never imports pyvista/vtk (PEP 562, test-enforced).
+- Animations are GIF-only (no imageio-ffmpeg/MP4).
+- The cutaway wedge applies to STATOR-side parts only (never slice the rotating parts).
+- Committed renders (docs/images/08_*.png/.gif) are regenerated locally on macOS via `python examples/08_3d_animation.py`; CI only smoke-runs the example under xvfb. Rendering tests skip without a GL context (`_can_render()` subprocess probe — VTK segfaults rather than raises without GL).
 
 Solver-layer invariants:
 - `import axfluxmdo.solvers` never imports gmsh (test-enforced; PEP 562 pattern). Every gmsh session goes through `_gmsh_session` (try/finally finalize); paths absolute; .msh files written as MSH 2.2 (GetDP compatibility).

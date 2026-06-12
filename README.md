@@ -236,6 +236,26 @@ optimism.
 ![BO convergence](docs/images/07_convergence.png)
 ![Surrogate slice](docs/images/07_surrogate_slice.png)
 
+## 3D visualization
+
+```python
+from axfluxmdo.viz import plot_motor_3d, animate_rotation, animate_exploded
+
+plot_motor_3d(motor, show=True)                      # interactive cutaway view
+animate_rotation(motor, "rotation.gif")              # rotor spinning over the stator
+animate_exploded(motor, "exploded.gif")              # assembly exploding/reassembling
+```
+
+The parametric motor renders as a true 3D assembly via PyVista
+(`pip install "axfluxmdo[viz3d]"`): rotor back iron, alternating N/S magnets, the
+slotted stator with copper coils, and the yoke — every solid built from the same
+`AxialFluxMotor` dimensions the physics models use (mesh volumes match the analytic
+volume properties to <0.1%, tested).
+
+![Motor 3D cutaway](docs/images/08_motor_3d.png)
+![Spinning rotor](docs/images/08_rotation.gif)
+![Exploded assembly](docs/images/08_exploded.gif)
+
 ## What's in the model (Phase 1)
 
 - **Magnetics:** magnet load-line air-gap flux density with temperature-derated
