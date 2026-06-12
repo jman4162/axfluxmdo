@@ -17,8 +17,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: System libraries for the gmsh wheel
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libxrender1 libxcursor1 libxft2 libxinerama1
       - name: Install
-        run: pip install -e ".[dev,opt]"
+        run: pip install -e ".[dev,opt,fea]"
       - name: Lint
         run: |
           ruff check .
@@ -32,3 +34,56 @@ jobs:
           python examples/01_basic_axial_flux_motor.py
           python examples/02_pole_pair_tradeoff.py
           python examples/05_torque_density_optimization.py
+          python examples/06_gmsh_export.py
+
+  # Advisory: exercises the live GetDP pipeline and uploads the gap-field
+  # tables (used as the source of the committed golden data). External binary
+  # download, so failures here never block the matrix.
+  getdp-pipeline:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: System libraries for the gmsh wheel
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa libxrender1 libxcursor1 libxft2 libxinerama1
+      - name: Install
+        run: pip install -e ".[dev,fea]"
+      - name: Install GetDP (pinned)
+        run: |
+          curl -fsSLo getdp.tgz https://getdp.info/bin/Linux/getdp-3.5.0-Linux64c.tgz
+          tar xzf getdp.tgz
+          echo "AXFLUXMDO_GETDP=$PWD/getdp-3.5.0-Linux64/bin/getdp" >> "$GITHUB_ENV"
+      - name: Live solver tests
+        run: pytest -q tests/test_getdp_runner.py tests/test_sim2real.py
+      - name: Generate gap-field tables
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python - << 'EOF'
+          from pathlib import Path
+          from axfluxmdo import AxialFluxMotor
+          from axfluxmdo.solvers import solve_open_circuit
+
+          motor = AxialFluxMotor(
+              outer_radius=0.08, inner_radius=0.025, air_gap=0.0008, pole_pairs=14,
+              phases=3, turns_per_phase=24, fill_factor=0.45,
+              magnet_thickness=0.004, back_iron_thickness=0.006,
+          )
+          out = Path("gap_field_artifacts"); out.mkdir()
+          for slotted, name in ((False, "slotless"), (True, "slotted")):
+              wd = out / name
+              sol = solve_open_circuit(motor, wd, slotted=slotted, magnet_temp_c=65.0)
+              print(name, "mean_b:", sol.mean_b_t, "b1:", sol.fundamental_b1_t)
+              (wd / "gap_field.dat").rename(out / f"06_gap_field_{name}.dat")
+          EOF
+      - name: Run example 06 (live branch)
+        env:
+          MPLBACKEND: Agg
+        run: python examples/06_gmsh_export.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gap-field-tables
+          path: gap_field_artifacts/06_gap_field_*.dat
