@@ -4,8 +4,12 @@
 > multidisciplinary design optimization of axial-flux permanent-magnet motors.
 
 [![CI](https://github.com/jman4162/axfluxmdo/actions/workflows/ci.yml/badge.svg)](https://github.com/jman4162/axfluxmdo/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/axfluxmdo)](https://pypi.org/project/axfluxmdo/)
+[![Docs](https://img.shields.io/badge/docs-jman4162.github.io%2Faxfluxmdo-blue)](https://jman4162.github.io/axfluxmdo/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+
+**📖 Full documentation (theory, derivations, API, examples): [jman4162.github.io/axfluxmdo](https://jman4162.github.io/axfluxmdo/)**
 
 `axfluxmdo` is a **reusable science layer** that sits above expert motor designers and
 high-fidelity FEA — not a replacement for either. It provides parametric axial-flux

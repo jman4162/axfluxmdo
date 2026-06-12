@@ -66,7 +66,7 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/jman4162/axfluxmdo"
 Repository = "https://github.com/jman4162/axfluxmdo"
-Documentation = "https://github.com/jman4162/axfluxmdo#readme"
+Documentation = "https://jman4162.github.io/axfluxmdo/"
 Issues = "https://github.com/jman4162/axfluxmdo/issues"
 Changelog = "https://github.com/jman4162/axfluxmdo/blob/main/CHANGELOG.md"
 

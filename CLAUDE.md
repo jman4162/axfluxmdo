@@ -22,6 +22,14 @@ Release/PyPI invariants (v0.7.0):
 - `carter_factor` defaults to 1.0 on both models — all golden values unchanged; the knob exists so measured FEA corrections can be fed back.
 - CHANGELOG.md is keep-a-changelog; add an entry per release.
 
+Docs site (MkDocs Material → GitHub Pages at https://jman4162.github.io/axfluxmdo/):
+- `mkdocs.yml` at root, `docs_dir: docs` — `docs/images/` doubles as README assets (README image URLs stay ABSOLUTE for PyPI; site pages use relative `images/...`).
+- `docs/examples/*.ipynb` are BUILD-TIME COPIES of `examples/*.ipynb` (gitignored, never edit) — regenerate notebooks via the jupytext flow and the site picks them up. Local build: `mkdir -p docs/examples && cp examples/*.ipynb docs/examples/ && mkdocs build --strict`.
+- `mkdocs build --strict` must pass; deploy = `.github/workflows/docs.yml` on push to main (paths-filtered).
+- mkdocstrings uses griffe STATIC analysis — `[opt]/[fea]/[viz3d]` are NOT needed for docs builds; API pages target leaf modules (PEP 562 packages don't expand statically).
+- `docs/limitations.md` is the canonical limitations doc (README keeps the summary); `docs/changelog.md` is a snippets include of CHANGELOG.md.
+- Guide pages carry the LaTeX derivations; docstrings keep plain-text math (terminal help() readability) — don't move equations from guides into docstrings or vice versa.
+
 3D-viz invariants:
 - pyvista/imageio live in the `[viz3d]` extra; `import axfluxmdo.viz` never imports pyvista/vtk (PEP 562, test-enforced).
 - Animations are GIF-only (no imageio-ffmpeg/MP4).
