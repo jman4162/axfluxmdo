@@ -19,18 +19,21 @@ from axfluxmdo.models.base import Model
 from axfluxmdo.operating_point import OperatingPoint
 
 
-def _replace_field(motor: AxialFluxMotor, name: str, value) -> AxialFluxMotor:
+def replace_field(motor: AxialFluxMotor, name: str, value) -> AxialFluxMotor:
     """``dataclasses.replace`` supporting one level of dotted paths.
 
     ``"tolerances.runout_m"`` replaces the field on the nested frozen
-    dataclass and re-attaches it — the mechanism for sweeping manufacturing
-    imperfections.
+    dataclass and re-attaches it — the mechanism for sweeping and optimizing
+    manufacturing imperfections.
     """
     if "." not in name:
         return dataclasses.replace(motor, **{name: value})
     outer, inner = name.split(".", 1)
     nested = dataclasses.replace(getattr(motor, outer), **{inner: value})
     return dataclasses.replace(motor, **{outer: nested})
+
+
+_replace_field = replace_field
 
 
 @dataclass
